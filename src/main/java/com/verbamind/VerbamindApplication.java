@@ -9,5 +9,4 @@ public class VerbamindApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(VerbamindApplication.class, args);
 	}
-
 }
