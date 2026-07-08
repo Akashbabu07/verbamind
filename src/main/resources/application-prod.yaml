@@ -17,7 +17,7 @@ verbamind:
     endpoint: ${MINIO_ENDPOINT}
     access-key: ${MINIO_ACCESS_KEY}
     secret-key: ${MINIO_SECRET_KEY}
-    bucket: documind-prod
+    bucket: verbamind-prod
   ai:
     provider: ${AI_PROVIDER:openai}
     openai:
@@ -29,4 +29,4 @@ verbamind:
 
 logging:
   level:
-    com.documind: INFO
+    com.verbamind: INFO

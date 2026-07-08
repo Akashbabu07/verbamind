@@ -10,9 +10,9 @@ spring:
 
 verbamind:
   jwt:
-    secret:
-      access-token-expiration-ms: 900000
-      refresh-token-expiration-ms: 604800000
+    secret: dev-secret-change-me-dev-secret-change-me
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
   minio:
     endpoint:  http://localhost:9000
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
