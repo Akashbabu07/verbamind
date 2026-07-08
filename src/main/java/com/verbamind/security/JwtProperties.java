@@ -2,7 +2,7 @@ package com.verbamind.security;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "documind.jwt")
+@ConfigurationProperties(prefix = "verbamind.jwt")
 public class JwtProperties {
 
     private String secret;

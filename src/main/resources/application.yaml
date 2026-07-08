@@ -12,9 +12,8 @@ spring:
         format_sql: true
   flyway:
     enabled: true
-    location:
   servlet:
-    mutlipart:
+    multipart:
       max-file-size: 25MB
       max-request-size: 25MB
 
@@ -35,4 +34,4 @@ management:
 logging:
   level:
     com.verbamind: DEBUG
-    org.springfrmework.web: INFO
+    org.springframework.web: INFO
