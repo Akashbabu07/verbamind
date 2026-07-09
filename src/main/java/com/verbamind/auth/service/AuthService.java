@@ -8,6 +8,7 @@ import com.verbamind.auth.exception.InvalidCredentialsException;
 import com.verbamind.auth.exception.InvalidTokenException;
 import com.verbamind.auth.repository.RefreshTokenRepository;
 import com.verbamind.auth.repository.UserRepository;
+import com.verbamind.organization.service.OrganizationService;
 import com.verbamind.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -28,19 +29,21 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final EmailService emailService;
-
+    private final OrganizationService organizationService;
     public AuthService(UserRepository userRepository,
                        RefreshTokenRepository refreshTokenRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtService jwtService,
-                       EmailService emailService) {
+                       EmailService emailService,
+                       OrganizationService organizationService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.emailService = emailService;
+        this.organizationService = organizationService;
     }
 
     @Transactional
@@ -57,11 +60,7 @@ public class AuthService {
         userRepository.save(user);
 
         emailService.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
-
-        // NOTE: personal workspace ("<name> Workspace") auto-creation happens
-        // here once the Organization module (Step 3) exists — this call will
-        // be added as: organizationService.createPersonalWorkspace(user);
-
+        organizationService.createPersonalWorkspace(user);
         return issueTokens(user);
     }
 
@@ -88,8 +87,6 @@ public class AuthService {
         if (existing.isRevoked() || existing.getExpiresAt().isBefore(Instant.now())) {
             throw new InvalidTokenException("Refresh token expired or revoked");
         }
-
-        // rotate: revoke old, issue new
         existing.setRevoked(true);
         refreshTokenRepository.save(existing);
 
@@ -113,8 +110,6 @@ public class AuthService {
             userRepository.save(user);
             emailService.sendPasswordResetEmail(user.getEmail(), user.getResetToken());
         });
-        // Always return success regardless of whether the email exists,
-        // to avoid leaking which emails are registered.
     }
 
     @Transactional
