@@ -32,7 +32,7 @@ public class UserService {
     @Transactional
     public UserProfileResponse updateUserProfile(UUID userId, UpdateProfileRequest request) {
         User user = getUserOrThrow(userId);
-        user.setFullName(request.FullName());
+        user.setFullName(request.fullName());
         userRepository.save(user);
         return toProfileResponse(user);
     }

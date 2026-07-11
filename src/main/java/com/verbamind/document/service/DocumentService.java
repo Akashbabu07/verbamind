@@ -1,5 +1,6 @@
 package com.verbamind.document.service;
 
+import com.verbamind.ai.service.DocumentIngestionService;
 import com.verbamind.auth.entity.User;
 import com.verbamind.auth.repository.UserRepository;
 import com.verbamind.document.dto.*;
@@ -41,17 +42,19 @@ public class DocumentService {
     private final UserRepository userRepository;
     private final StorageService storageService;
     private final OrganizationAccessGuard accessGuard;
+    private final DocumentIngestionService ingestionService;
 
     public DocumentService(DocumentRepository documentRepository,
                            OrganizationRepository organizationRepository,
                            UserRepository userRepository,
                            StorageService storageService,
-                           OrganizationAccessGuard accessGuard) {
+                           OrganizationAccessGuard accessGuard,DocumentIngestionService ingestionService) {
         this.documentRepository = documentRepository;
         this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
         this.accessGuard = accessGuard;
+        this.ingestionService = ingestionService;
     }
 
     @Transactional
@@ -91,8 +94,7 @@ public class DocumentService {
         doc.setStatus(DocumentStatus.UPLOADED);
         documentRepository.save(doc);
 
-        // NOTE: Step 6 (AI Processing) hooks in here — after save, kick off:
-        // aiIngestionService.processDocument(doc.getId());
+         ingestionService.processDocument(doc.getId());
         // which will flip status UPLOADED -> PROCESSING -> READY/FAILED.
 
         return toResponse(doc);
@@ -136,15 +138,11 @@ public class DocumentService {
     public void delete(UUID currentUserId, UUID organizationId, UUID documentId) {
         accessGuard.requireMembership(organizationId, currentUserId);
         Document doc = getDocOrThrow(organizationId, documentId);
-
-        // Soft delete metadata; hard delete the object in MinIO immediately
-        // since keeping orphaned blobs around has no value and costs storage.
         doc.setDeleted(true);
         documentRepository.save(doc);
         storageService.delete(doc.getStorageKey());
 
-        // NOTE: Step 6 (AI) should also delete this document's embeddings here:
-        // aiIngestionService.deleteEmbeddings(documentId);
+         ingestionService.deleteEmbeddings(documentId);
     }
 
     private Document getDocOrThrow(UUID organizationId, UUID documentId) {
