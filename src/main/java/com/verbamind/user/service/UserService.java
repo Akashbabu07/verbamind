@@ -1,33 +1,39 @@
 package com.verbamind.user.service;
 
+import com.verbamind.auth.entity.User;
 import com.verbamind.auth.repository.RefreshTokenRepository;
 import com.verbamind.auth.repository.UserRepository;
+import com.verbamind.organization.entity.Organization;
+import com.verbamind.organization.service.OrganizationService;
+import com.verbamind.subscription.dto.SubscriptionResponse;
+import com.verbamind.subscription.service.SubscriptionService;
+import com.verbamind.usage.dto.UsageResponse;
+import com.verbamind.usage.service.UsageService;
 import com.verbamind.user.dto.*;
 import com.verbamind.user.exception.IncorrectPasswordException;
 import com.verbamind.user.exception.UserNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import com.verbamind.auth.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.beans.Transient;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
-
     private final RefreshTokenRepository refreshTokenRepository;
+    private final OrganizationService organizationService;
+    private final SubscriptionService subscriptionService;
+    private final UsageService usageService;
 
     public UserProfileResponse getUserProfile(UUID userId) {
-        User user= getUserOrThrow(userId);
+        User user = getUserOrThrow(userId);
         return toProfileResponse(user);
     }
-
 
     @Transactional
     public UserProfileResponse updateUserProfile(UUID userId, UpdateProfileRequest request) {
@@ -49,7 +55,6 @@ public class UserService {
         refreshTokenRepository.deleteByUserId(user.getId());
     }
 
-
     @Transactional
     public void deleteUser(UUID userId, DeleteAccountRequest request) {
         User user = getUserOrThrow(userId);
@@ -62,32 +67,33 @@ public class UserService {
 
         refreshTokenRepository.deleteByUserId(user.getId());
     }
+
     /**
-     * PLACEHOLDER — replace with a real call into SubscriptionService once
-     * Step 8 (Subscription) is built. For now every user is reported as being
-     * on the Free plan with the V1 default limits.
+     * Reports the subscription for the user's personal workspace. Team-org
+     * subscriptions are available separately via
+     * GET /api/organizations/{organizationId}/subscription — this is the
+     * "my own" shortcut used by GET /api/users/me/subscription.
      */
-    public SubscriptionSummaryResponse getSubscriptionSummary(UUID userId) {
-        getUserOrThrow(userId);
-        return new SubscriptionSummaryResponse(
-                "FREE", "ACTIVE", 1_073_741_824L /* 1 GB */, 20, 200);
+    public SubscriptionResponse getSubscriptionSummary(UUID userId) {
+        Organization personalWorkspace = organizationService.getPersonalWorkspace(userId);
+        return subscriptionService.getSubscription(userId, personalWorkspace.getId());
     }
 
     /**
-     * PLACEHOLDER — replace with a real call into UsageService once Step 10
-     * (Usage Tracking) is built. Returns zeros until then.
+     * Reports usage for the user's personal workspace, same reasoning as
+     * getSubscriptionSummary() above.
      */
-    public UsageSummaryResponse getUsageSummary(UUID userId) {
-        getUserOrThrow(userId);
-        return new UsageSummaryResponse(0, 0, 0, 0, 0);
+    public UsageResponse getUsageSummary(UUID userId) {
+        Organization personalWorkspace = organizationService.getPersonalWorkspace(userId);
+        return usageService.getUsageSummary(userId, personalWorkspace.getId());
     }
 
     private UserProfileResponse toProfileResponse(User user) {
-        return  new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(),
+        return new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(),
                 user.isEmailVerified(), user.getCreatedAt());
     }
 
     private User getUserOrThrow(UUID userId) {
-        return userRepository.findById(userId).orElseThrow(()->new UserNotFoundException("user not found "));
+        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("user not found "));
     }
 }

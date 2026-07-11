@@ -15,6 +15,7 @@ import com.verbamind.organization.exception.OrganizationNotFoundException;
 import com.verbamind.organization.repository.OrganizationRepository;
 import com.verbamind.document.service.OrganizationAccessGuard;
 import com.verbamind.organization.service.OrganizationService;
+import com.verbamind.usage.service.UsageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,18 +44,21 @@ public class DocumentService {
     private final StorageService storageService;
     private final OrganizationAccessGuard accessGuard;
     private final DocumentIngestionService ingestionService;
+    private final UsageService usageService;
+
 
     public DocumentService(DocumentRepository documentRepository,
                            OrganizationRepository organizationRepository,
                            UserRepository userRepository,
                            StorageService storageService,
-                           OrganizationAccessGuard accessGuard,DocumentIngestionService ingestionService) {
+                           OrganizationAccessGuard accessGuard,DocumentIngestionService ingestionService,UsageService usageService) {
         this.documentRepository = documentRepository;
         this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
         this.storageService = storageService;
         this.accessGuard = accessGuard;
         this.ingestionService = ingestionService;
+        this.usageService = usageService;
     }
 
     @Transactional
@@ -67,9 +71,7 @@ public class DocumentService {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new FileTooLargeException(MAX_FILE_SIZE);
         }
-
-        // NOTE: Step 8 (Subscription) + Step 10 (Usage) should add a check here:
-        // usageService.assertStorageQuotaAvailable(organizationId, file.getSize());
+         usageService.assertStorageQuotaAvailable(organizationId, file.getSize());
 
         Organization org = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException("Organization not found"));
