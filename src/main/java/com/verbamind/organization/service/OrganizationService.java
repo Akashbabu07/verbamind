@@ -43,6 +43,21 @@ public class OrganizationService {
     /**
      * Called from AuthService.register() right after a new user is created.
      */
+
+    /**
+     * Finds a user's personal workspace — used by UserService to report
+     * subscription/usage at GET /api/users/me/subscription and /usage, which
+     * are user-scoped endpoints that need a default organization context.
+     */
+    public Organization getPersonalWorkspace(UUID userId) {
+        return membershipRepository.findByUserId(userId).stream()
+                .filter(m -> m.getStatus() == com.verbamind.organization.entity.MembershipStatus.ACTIVE)
+                .map(Membership::getOrganization)
+                .filter(Organization::isPersonal)
+                .findFirst()
+                .orElseThrow(() -> new OrganizationNotFoundException("Personal workspace not found for user"));
+    }
+
     @Transactional
     public Organization createPersonalWorkspace(User user) {
         Organization org = new Organization();

@@ -9,6 +9,7 @@ import com.verbamind.ai.provider.AiProvider;
 import com.verbamind.ai.repository.DocumentChunkRepository;
 import com.verbamind.document.repository.DocumentRepository;
 import com.verbamind.document.service.OrganizationAccessGuard;
+import com.verbamind.usage.service.UsageService;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -25,15 +26,18 @@ public class RagQueryService {
     private final DocumentRepository documentRepository;
     private final AiProvider aiProvider;
     private final OrganizationAccessGuard accessGuard;
+    private final UsageService usageService;
 
     public RagQueryService(DocumentChunkRepository chunkRepository,
                            DocumentRepository documentRepository,
                            AiProvider aiProvider,
-                           OrganizationAccessGuard accessGuard) {
+                           OrganizationAccessGuard accessGuard,
+                           UsageService usageService) {
         this.chunkRepository = chunkRepository;
         this.documentRepository = documentRepository;
         this.aiProvider = aiProvider;
         this.accessGuard = accessGuard;
+        this.usageService = usageService;
     }
 
     // add this method to the existing RagQueryService class
@@ -43,6 +47,8 @@ public class RagQueryService {
      * ChatService, which already owns those checks at the chat level.
      */
     public AskQuestionResponse answer(UUID organizationId, String question) {
+        usageService.assertAiQuotaAvailable(organizationId);
+
         float[] questionEmbedding = aiProvider.generateEmbedding(question);
         String vectorLiteral = toVectorLiteral(questionEmbedding);
 
@@ -50,6 +56,8 @@ public class RagQueryService {
                 chunkRepository.findSimilarChunks(organizationId, vectorLiteral, TOP_K);
 
         if (relevantChunks.isEmpty()) {
+            // No relevant docs found — still a successful, cheap request; not
+            // charged against quota since no LLM completion call was made.
             return new AskQuestionResponse(
                     "I don't have any relevant documents to answer that question yet.",
                     List.of());
@@ -65,9 +73,25 @@ public class RagQueryService {
         String userPrompt = "Context:\n" + context + "\n\nQuestion: " + question;
 
         String answer = aiProvider.generateCompletion(systemPrompt, userPrompt);
+
+        // Only record quota consumption on a successful completion — if
+        // aiProvider.generateCompletion() throws above, this line never runs,
+        // satisfying "only successful AI requests consume quota."
+        long approxTokens = estimateTokens(userPrompt) + estimateTokens(answer);
+        usageService.recordAiRequest(organizationId, approxTokens);
+
         List<CitationDto> citations = buildCitations(relevantChunks);
 
         return new AskQuestionResponse(answer, citations);
+    }
+
+    /**
+     * Rough token estimate (chars / 4) since providers don't uniformly return
+     * usage stats through this abstraction yet. Good enough for quota display;
+     * swap for provider-reported usage later if precision matters.
+     */
+    private long estimateTokens(String text) {
+        return text == null ? 0 : Math.max(1, text.length() / 4);
     }
 
     public AskQuestionResponse ask(UUID currentUserId, UUID organizationId, AskQuestionRequest request) {

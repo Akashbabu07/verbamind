@@ -2,6 +2,8 @@ package com.verbamind.user.controller;
 
 import com.verbamind.common.dto.ApiResponse;
 import com.verbamind.security.CustomUserDetails;
+import com.verbamind.subscription.dto.SubscriptionResponse;
+import com.verbamind.usage.dto.UsageResponse;
 import com.verbamind.user.dto.*;
 import com.verbamind.user.service.UserService;
 import jakarta.validation.Valid;
@@ -50,13 +52,13 @@ public class UserController {
     }
 
     @GetMapping("/subscription")
-    public ResponseEntity<ApiResponse<SubscriptionSummaryResponse>> getSubscription(
+    public ResponseEntity<ApiResponse<SubscriptionResponse>> getSubscription(
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         return ResponseEntity.ok(ApiResponse.success(userService.getSubscriptionSummary(currentUser.getId())));
     }
 
     @GetMapping("/usage")
-    public ResponseEntity<ApiResponse<UsageSummaryResponse>> getUsage(
+    public ResponseEntity<ApiResponse<UsageResponse>> getUsage(
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUsageSummary(currentUser.getId())));
     }
