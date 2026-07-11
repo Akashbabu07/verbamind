@@ -1,6 +1,7 @@
 package com.verbamind.subscription.service;
 
 import com.verbamind.organization.entity.Organization;
+import com.verbamind.organization.entity.OrganizationRole;
 import com.verbamind.organization.exception.OrganizationNotFoundException;
 import com.verbamind.organization.repository.OrganizationRepository;
 import com.verbamind.document.service.OrganizationAccessGuard;
@@ -97,25 +98,26 @@ public class SubscriptionService {
      * membership + plan existence — actual activation happens after Razorpay
      * payment verification in Step 9 (PaymentService calls changePlan()).
      */
+    /**
+     * User-facing "upgrade" request. FREE applies immediately (no payment
+     * needed). For PRO/ENTERPRISE, this now tells the caller payment is
+     * required instead of silently no-op'ing — the frontend should then call
+     * POST /payments/create-order to get a Razorpay order and open checkout.
+     */
     @Transactional
-    public SubscriptionResponse requestUpgrade(UUID currentUserId, UUID organizationId, UpgradePlanRequest request) {
-        accessGuard.requireRole(organizationId, currentUserId, com.verbamind.organization.entity.OrganizationRole.ADMIN); // any active member can view; enforce OWNER/ADMIN below
-        Subscription sub = getSubscriptionOrThrow(organizationId);
+    public UpgradeResultResponse requestUpgrade(UUID currentUserId, UUID organizationId, UpgradePlanRequest request) {
+        accessGuard.requireRole(organizationId, currentUserId, OrganizationRole.ADMIN);
 
         if (request.planCode() == PlanCode.FREE) {
-            return changePlan(organizationId, PlanCode.FREE);
+            SubscriptionResponse sub = changePlan(organizationId, PlanCode.FREE);
+            return new UpgradeResultResponse(false, sub, null);
         }
 
-        // NOTE: Step 9 (Payments) intercepts here in the real flow — the
-        // frontend calls Razorpay checkout first, then on successful webhook
-        // verification, PaymentService calls subscriptionService.changePlan().
-        // This method just confirms the plan/org are valid for now.
-        planRepository.findByCode(request.planCode())
+        Plan plan = planRepository.findByCode(request.planCode())
                 .orElseThrow(() -> new PlanNotFoundException("Plan not found: " + request.planCode()));
 
-        return toSubscriptionResponse(sub);
+        return new UpgradeResultResponse(true, null, plan.getCode());
     }
-
     @Transactional
     public SubscriptionResponse cancelPlan(UUID currentUserId, UUID organizationId) {
         accessGuard.requireMembership(organizationId, currentUserId);
