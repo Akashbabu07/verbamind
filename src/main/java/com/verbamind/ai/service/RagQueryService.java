@@ -36,15 +36,14 @@ public class RagQueryService {
         this.accessGuard = accessGuard;
     }
 
-    public AskQuestionResponse ask(UUID currentUserId, UUID organizationId, AskQuestionRequest request) {
-        accessGuard.requireMembership(organizationId, currentUserId);
+    // add this method to the existing RagQueryService class
 
-        // NOTE: Step 8/10 (Subscription + Usage) should gate this call with:
-        // usageService.assertAiQuotaAvailable(organizationId);
-        // and record consumption after a successful answer:
-        // usageService.recordAiRequest(organizationId, tokensUsed);
-
-        float[] questionEmbedding = aiProvider.generateEmbedding(request.question());
+    /**
+     * Core RAG call without membership/quota concerns — used internally by
+     * ChatService, which already owns those checks at the chat level.
+     */
+    public AskQuestionResponse answer(UUID organizationId, String question) {
+        float[] questionEmbedding = aiProvider.generateEmbedding(question);
         String vectorLiteral = toVectorLiteral(questionEmbedding);
 
         List<DocumentChunk> relevantChunks =
@@ -58,18 +57,22 @@ public class RagQueryService {
 
         String context = buildContext(relevantChunks);
         String systemPrompt = """
-                You are DocuMind, an assistant that answers questions strictly using the
-                provided document excerpts. Always cite which excerpt(s) support each
-                claim using [1], [2], etc. If the excerpts don't contain the answer,
-                say so honestly instead of guessing.
-                """;
-        String userPrompt = "Context:\n" + context + "\n\nQuestion: " + request.question();
+            You are DocuMind, an assistant that answers questions strictly using the
+            provided document excerpts. Always cite which excerpt(s) support each
+            claim using [1], [2], etc. If the excerpts don't contain the answer,
+            say so honestly instead of guessing.
+            """;
+        String userPrompt = "Context:\n" + context + "\n\nQuestion: " + question;
 
         String answer = aiProvider.generateCompletion(systemPrompt, userPrompt);
-
         List<CitationDto> citations = buildCitations(relevantChunks);
 
         return new AskQuestionResponse(answer, citations);
+    }
+
+    public AskQuestionResponse ask(UUID currentUserId, UUID organizationId, AskQuestionRequest request) {
+        accessGuard.requireMembership(organizationId, currentUserId);
+        return answer(organizationId, request.question());
     }
 
     private String buildContext(List<DocumentChunk> chunks) {
