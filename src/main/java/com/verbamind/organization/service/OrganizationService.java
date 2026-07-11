@@ -11,6 +11,7 @@ import com.verbamind.organization.entity.OrganizationRole;
 import com.verbamind.organization.exception.*;
 import com.verbamind.organization.repository.MembershipRepository;
 import com.verbamind.organization.repository.OrganizationRepository;
+import com.verbamind.subscription.service.SubscriptionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +22,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class OrganizationService {
-
+    private final SubscriptionService subscriptionService;
     private final OrganizationRepository organizationRepository;
     private final MembershipRepository membershipRepository;
     private final UserRepository userRepository;
@@ -30,11 +31,13 @@ public class OrganizationService {
     public OrganizationService(OrganizationRepository organizationRepository,
                                MembershipRepository membershipRepository,
                                UserRepository userRepository,
-                               EmailService emailService) {
+                               EmailService emailService,
+                               SubscriptionService subscriptionService) {
         this.organizationRepository = organizationRepository;
         this.membershipRepository = membershipRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.subscriptionService = subscriptionService;
     }
 
     /**
@@ -48,6 +51,7 @@ public class OrganizationService {
         org.setPersonal(true);
         org.setOwner(user);
         organizationRepository.save(org);
+        subscriptionService.createFreeSubscription(org);
 
         Membership membership = new Membership();
         membership.setOrganization(org);
@@ -70,6 +74,7 @@ public class OrganizationService {
         org.setPersonal(false);
         org.setOwner(owner);
         organizationRepository.save(org);
+        subscriptionService.createFreeSubscription(org);
 
         Membership membership = new Membership();
         membership.setOrganization(org);
