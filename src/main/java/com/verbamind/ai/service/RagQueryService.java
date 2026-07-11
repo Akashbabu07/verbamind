@@ -8,7 +8,7 @@ import com.verbamind.ai.entity.DocumentChunk;
 import com.verbamind.ai.provider.AiProvider;
 import com.verbamind.ai.repository.DocumentChunkRepository;
 import com.verbamind.document.repository.DocumentRepository;
-import com.verbamind.organization.service.OrganizationAccessGuard;
+import com.verbamind.document.service.OrganizationAccessGuard;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
