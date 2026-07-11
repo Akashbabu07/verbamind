@@ -24,3 +24,8 @@ verbamind:
       base-url: http://localhost:11434
       embedding-model: nomic-embed-text
       chat-model: llama3.2
+
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder}
+    key-secret: ${RAZORPAY_KEY_SECRET:test_secret_placeholder}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:test_webhook_secret}

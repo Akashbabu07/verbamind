@@ -35,12 +35,12 @@ public class SubscriptionController {
     }
 
     @PostMapping("/api/organizations/{organizationId}/subscription/upgrade")
-    public ResponseEntity<ApiResponse<SubscriptionResponse>> upgrade(
+    public ResponseEntity<ApiResponse<UpgradeResultResponse>> upgrade(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @PathVariable UUID organizationId,
             @Valid @RequestBody UpgradePlanRequest request) {
-        var sub = subscriptionService.requestUpgrade(currentUser.getId(), organizationId, request);
-        return ResponseEntity.ok(ApiResponse.success(sub, "Upgrade requested"));
+        var result = subscriptionService.requestUpgrade(currentUser.getId(), organizationId, request);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PostMapping("/api/organizations/{organizationId}/subscription/cancel")
