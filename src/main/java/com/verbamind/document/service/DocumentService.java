@@ -13,7 +13,7 @@ import com.verbamind.document.repository.DocumentRepository;
 import com.verbamind.organization.entity.Organization;
 import com.verbamind.organization.exception.OrganizationNotFoundException;
 import com.verbamind.organization.repository.OrganizationRepository;
-import com.verbamind.organization.service.OrganizationAccessGuard;
+import com.verbamind.document.service.OrganizationAccessGuard;
 import com.verbamind.organization.service.OrganizationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
