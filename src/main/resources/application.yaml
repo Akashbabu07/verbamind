@@ -1,8 +1,8 @@
 spring:
   application:
     name: verbamind
-    profiles:
-      active: dev
+  profiles:
+    active: dev
   jpa:
     hibernate:
       ddl-auto: validate

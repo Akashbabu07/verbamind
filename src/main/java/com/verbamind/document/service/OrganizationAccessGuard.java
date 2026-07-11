@@ -1,4 +1,4 @@
-package com.verbamind.organization.service;
+package com.verbamind.document.service;
 
 import com.verbamind.organization.entity.Membership;
 import com.verbamind.organization.entity.MembershipStatus;
