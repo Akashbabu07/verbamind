@@ -98,9 +98,9 @@ public class ChatService {
         accessGuard.requireMembership(organizationId, currentUserId);
         Chat chat = getOwnedChatOrThrow(organizationId, currentUserId, chatId);
 
-        // NOTE: Step 8/10 (Subscription + Usage) should gate this call with:
-        // usageService.assertAiQuotaAvailable(organizationId);
-        // and record consumption after a successful answer.
+        // Quota check + recording happen inside ragQueryService.answer():
+        // it calls usageService.assertAiQuotaAvailable() before the LLM call
+        // and usageService.recordAiRequest() only after a successful answer.
 
         Message userMessage = new Message();
         userMessage.setChat(chat);

@@ -18,4 +18,6 @@ public interface MembershipRepository extends JpaRepository<Membership, UUID> {
     Optional<Membership> findByInviteToken(String inviteToken);
 
     boolean existsByOrganizationIdAndUserId(UUID organizationId, UUID userId);
+
+    long countByOrganizationId(UUID organizationId);
 }

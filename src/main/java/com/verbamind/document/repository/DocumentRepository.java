@@ -24,4 +24,9 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
                                         Pageable pageable);
 
     long countByOrganizationIdAndDeletedFalse(UUID organizationId);
+
+    long countByDeletedFalse();
+
+    @Query("SELECT COALESCE(SUM(d.fileSize), 0) FROM Document d WHERE d.deleted = false")
+    long sumFileSizeAllOrganizations();
 }

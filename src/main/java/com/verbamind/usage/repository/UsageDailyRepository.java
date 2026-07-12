@@ -22,4 +22,13 @@ public interface UsageDailyRepository extends JpaRepository<UsageDaily, UUID> {
     List<UsageDaily> findInRange(@Param("organizationId") UUID organizationId,
                                  @Param("from") LocalDate from,
                                  @Param("to") LocalDate to);
+
+    @Query("SELECT COALESCE(SUM(u.aiRequests), 0) FROM UsageDaily u WHERE u.usageDate = :date")
+    long sumAiRequestsForDate(@Param("date") LocalDate date);
+
+    @Query("SELECT COALESCE(SUM(u.aiRequests), 0) FROM UsageDaily u WHERE u.usageDate BETWEEN :from AND :to")
+    long sumAiRequestsInRange(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT COALESCE(SUM(u.tokensUsed), 0) FROM UsageDaily u WHERE u.usageDate BETWEEN :from AND :to")
+    long sumTokensInRange(@Param("from") LocalDate from, @Param("to") LocalDate to);
 }
