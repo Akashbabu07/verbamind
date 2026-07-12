@@ -51,7 +51,7 @@ public class OrganizationService {
      */
     public Organization getPersonalWorkspace(UUID userId) {
         return membershipRepository.findByUserId(userId).stream()
-                .filter(m -> m.getStatus() == com.verbamind.organization.entity.MembershipStatus.ACTIVE)
+                .filter(m -> m.getStatus() == MembershipStatus.ACTIVE)
                 .map(Membership::getOrganization)
                 .filter(Organization::isPersonal)
                 .findFirst()
