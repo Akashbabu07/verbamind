@@ -59,7 +59,7 @@ public class RagQueryService {
 
         String context = buildContext(relevantChunks);
         String systemPrompt = """
-            You are DocuMind, an assistant that answers questions strictly using the
+            You are verbamind, an assistant that answers questions strictly using the
             provided document excerpts. Always cite which excerpt(s) support each
             claim using [1], [2], etc. If the excerpts don't contain the answer,
             say so honestly instead of guessing.
