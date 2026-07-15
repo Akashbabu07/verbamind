@@ -4,6 +4,6 @@ import com.verbamind.subscription.entity.PlanCode;
 
 public record UpgradeResultResponse(
         boolean requiresPayment,
-        SubscriptionResponse subscription,   // populated only if switched immediately (FREE)
-        PlanCode pendingPlanCode             // populated only if requiresPayment = true
+        SubscriptionResponse subscription,
+        PlanCode pendingPlanCode
 ) {}

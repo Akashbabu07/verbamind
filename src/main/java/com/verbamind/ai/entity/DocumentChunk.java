@@ -2,6 +2,8 @@ package com.verbamind.ai.entity;
 
 import com.pgvector.PGvector;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -10,37 +12,37 @@ import java.util.UUID;
 @Table(name = "document_chunks")
 public class DocumentChunk {
 
+    @Getter
     @Id
     @GeneratedValue
     private UUID id;
 
+    @Setter
+    @Getter
     @Column(name = "document_id", nullable = false)
     private UUID documentId;
 
+    @Setter
+    @Getter
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
 
+    @Setter
+    @Getter
     @Column(name = "chunk_index", nullable = false)
     private int chunkIndex;
 
+    @Setter
+    @Getter
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Getter
+    @Setter
     @Column(columnDefinition = "vector(768)")
     private PGvector embedding;
 
     @Column(name = "created_at", updatable = false, insertable = false)
     private Instant createdAt;
 
-    public UUID getId() { return id; }
-    public UUID getDocumentId() { return documentId; }
-    public void setDocumentId(UUID documentId) { this.documentId = documentId; }
-    public UUID getOrganizationId() { return organizationId; }
-    public void setOrganizationId(UUID organizationId) { this.organizationId = organizationId; }
-    public int getChunkIndex() { return chunkIndex; }
-    public void setChunkIndex(int chunkIndex) { this.chunkIndex = chunkIndex; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public PGvector getEmbedding() { return embedding; }
-    public void setEmbedding(PGvector embedding) { this.embedding = embedding; }
 }

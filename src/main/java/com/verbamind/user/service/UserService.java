@@ -68,21 +68,11 @@ public class UserService {
         refreshTokenRepository.deleteByUserId(user.getId());
     }
 
-    /**
-     * Reports the subscription for the user's personal workspace. Team-org
-     * subscriptions are available separately via
-     * GET /api/organizations/{organizationId}/subscription — this is the
-     * "my own" shortcut used by GET /api/users/me/subscription.
-     */
     public SubscriptionResponse getSubscriptionSummary(UUID userId) {
         Organization personalWorkspace = organizationService.getPersonalWorkspace(userId);
         return subscriptionService.getSubscription(userId, personalWorkspace.getId());
     }
 
-    /**
-     * Reports usage for the user's personal workspace, same reasoning as
-     * getSubscriptionSummary() above.
-     */
     public UsageResponse getUsageSummary(UUID userId) {
         Organization personalWorkspace = organizationService.getPersonalWorkspace(userId);
         return usageService.getUsageSummary(userId, personalWorkspace.getId());

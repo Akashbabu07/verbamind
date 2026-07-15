@@ -42,11 +42,6 @@ public class AdminOrganizationService {
         return toResponse(getOrgOrThrow(organizationId));
     }
 
-    /**
-     * Admin override — force-switches an org's plan without requiring
-     * payment (e.g. comping a customer, fixing a stuck subscription after a
-     * support ticket). Distinct from the normal Razorpay-gated upgrade flow.
-     */
     @Transactional
     public AdminOrganizationResponse overridePlan(UUID organizationId, AdminSubscriptionOverrideRequest request) {
         getOrgOrThrow(organizationId); // validates existence

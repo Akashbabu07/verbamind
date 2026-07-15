@@ -40,15 +40,6 @@ public class OrganizationService {
         this.subscriptionService = subscriptionService;
     }
 
-    /**
-     * Called from AuthService.register() right after a new user is created.
-     */
-
-    /**
-     * Finds a user's personal workspace — used by UserService to report
-     * subscription/usage at GET /api/users/me/subscription and /usage, which
-     * are user-scoped endpoints that need a default organization context.
-     */
     public Organization getPersonalWorkspace(UUID userId) {
         return membershipRepository.findByUserId(userId).stream()
                 .filter(m -> m.getStatus() == MembershipStatus.ACTIVE)
@@ -131,16 +122,11 @@ public class OrganizationService {
         membership.setRole(request.role());
         membership.setStatus(MembershipStatus.PENDING);
         membership.setInviteToken(UUID.randomUUID().toString());
-
-        // If the invited user already has an account, link it now but keep PENDING
-        // until they explicitly accept.
         userRepository.findByEmail(request.email()).ifPresent(membership::setUser);
 
         membershipRepository.save(membership);
 
         emailService.sendVerificationEmail(request.email(), membership.getInviteToken());
-        // (Reusing sendVerificationEmail as a generic "here is a link with a token" sender.
-        //  Swap for a dedicated sendInviteEmail() when the Email module is built out further.)
 
         return toMembershipResponse(membership);
     }
@@ -206,7 +192,6 @@ public class OrganizationService {
         membershipRepository.delete(membership);
     }
 
-    // ---------- helpers ----------
 
     private Organization getOrgOrThrow(UUID organizationId) {
         return organizationRepository.findById(organizationId)

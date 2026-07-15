@@ -20,7 +20,6 @@ public class Message extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    // Stored as JSONB; serialized/deserialized as a JSON string in the service layer
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String citations;
