@@ -56,11 +56,7 @@ public class PaymentService {
         this.organizationRepository = organizationRepository;
     }
 
-    /**
-     * Step 1 of the upgrade flow: create a Razorpay order for a paid plan.
-     * The subscription is NOT switched yet — that only happens after
-     * verifyPayment() succeeds (or the webhook confirms it independently).
-     */
+
     @Transactional
     public CreateOrderResponse createOrder(UUID currentUserId, UUID organizationId, CreateOrderRequest request) {
         accessGuard.requireRole(organizationId, currentUserId, OrganizationRole.ADMIN);
@@ -102,13 +98,6 @@ public class PaymentService {
         }
     }
 
-    /**
-     * Step 2: called by the frontend right after Razorpay's checkout modal
-     * succeeds, carrying the signature Razorpay returned to the browser.
-     * This is a client-side confirmation path; the webhook (handleWebhook)
-     * is the authoritative server-to-server confirmation and should be
-     * trusted over this if they ever disagree.
-     */
     @Transactional
     public PaymentResponse verifyPayment(UUID currentUserId, UUID organizationId, VerifyPaymentRequest request) {
         accessGuard.requireRole(organizationId, currentUserId, OrganizationRole.ADMIN);
@@ -131,11 +120,6 @@ public class PaymentService {
         return toPaymentResponse(payment);
     }
 
-    /**
-     * Authoritative path: Razorpay calls this server-to-server on payment
-     * events. Always verify the webhook signature (different secret from
-     * the checkout signature) before trusting the payload.
-     */
     @Transactional
     public void handleWebhook(String rawBody, String webhookSignatureHeader) {
         boolean valid;

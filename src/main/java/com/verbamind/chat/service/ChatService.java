@@ -88,19 +88,11 @@ public class ChatService {
         return new ChatDetailResponse(chat.getId(), chat.getTitle(), messages);
     }
 
-    /**
-     * Continue the conversation: save the user's message, run RAG, save the
-     * assistant's answer with citations, and bump the chat's updatedAt via
-     * BaseEntity's @UpdateTimestamp (triggered by the chat title touch below).
-     */
+
     @Transactional
     public MessageResponse sendMessage(UUID currentUserId, UUID organizationId, UUID chatId, SendMessageRequest request) {
         accessGuard.requireMembership(organizationId, currentUserId);
         Chat chat = getOwnedChatOrThrow(organizationId, currentUserId, chatId);
-
-        // Quota check + recording happen inside ragQueryService.answer():
-        // it calls usageService.assertAiQuotaAvailable() before the LLM call
-        // and usageService.recordAiRequest() only after a successful answer.
 
         Message userMessage = new Message();
         userMessage.setChat(chat);
@@ -117,8 +109,8 @@ public class ChatService {
         assistantMessage.setCitations(serializeCitations(ragResponse.citations()));
         messageRepository.save(assistantMessage);
 
-        // touch the chat so it sorts to the top of "recent chats"
-        chat.setTitle(chat.getTitle()); // no-op field write to trigger @UpdateTimestamp
+
+        chat.setTitle(chat.getTitle());
         chatRepository.save(chat);
 
         return toMessageResponse(assistantMessage);

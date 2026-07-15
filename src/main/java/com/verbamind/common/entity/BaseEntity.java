@@ -13,7 +13,6 @@ import java.util.UUID;
 @MappedSuperclass
 @Getter
 @Setter
-@EntityListeners(AuditingEntityListener.class)
 public class BaseEntity {
 
     @Id

@@ -35,12 +35,6 @@ public class UsageService {
         this.accessGuard = accessGuard;
     }
 
-    // ---------- Quota checks (called BEFORE the action happens) ----------
-
-    /**
-     * Called by ChatService/RagQueryService before running an AI question.
-     * Throws if the org has hit its daily or monthly limit.
-     */
     public void assertAiQuotaAvailable(UUID organizationId) {
         Plan plan = subscriptionService.getActivePlan(organizationId);
         LocalDate today = LocalDate.now();
@@ -58,10 +52,6 @@ public class UsageService {
         }
     }
 
-    /**
-     * Called by DocumentService.upload() before accepting a file, to check
-     * the org won't exceed its storage limit.
-     */
     public void assertStorageQuotaAvailable(UUID organizationId, long incomingFileSize) {
         Plan plan = subscriptionService.getActivePlan(organizationId);
         long currentUsage = currentStorageUsedBytes(organizationId);
@@ -71,14 +61,6 @@ public class UsageService {
                     "Storage limit reached (" + (plan.getStorageLimitBytes() / (1024 * 1024)) + " MB). Delete files or upgrade your plan.");
         }
     }
-
-    // ---------- Recording (called AFTER a successful action) ----------
-
-    /**
-     * Only called after a successful AI answer — per spec, only successful
-     * AI requests consume quota. Failed provider calls (exceptions thrown
-     * from AiProvider) never reach this method.
-     */
     @Transactional
     public void recordAiRequest(UUID organizationId, long tokensUsed) {
         LocalDate today = LocalDate.now();
@@ -88,7 +70,6 @@ public class UsageService {
         usageDailyRepository.save(usage);
     }
 
-    // ---------- Read-facing summary (used by UserService.getUsageSummary) ----------
 
     public UsageResponse getUsageSummary(UUID currentUserId, UUID organizationId) {
         accessGuard.requireMembership(organizationId, currentUserId);
@@ -107,7 +88,6 @@ public class UsageService {
                 plan.getDailyAiQuestionLimit(), plan.getMonthlyAiQuestionLimit(), plan.getStorageLimitBytes());
     }
 
-    // ---------- helpers ----------
 
     private UsageDaily todayUsage(UUID organizationId, LocalDate date) {
         return usageDailyRepository.findByOrganizationIdAndUsageDate(organizationId, date)

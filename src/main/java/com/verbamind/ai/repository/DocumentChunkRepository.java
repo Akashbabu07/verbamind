@@ -14,10 +14,6 @@ public interface DocumentChunkRepository extends JpaRepository<DocumentChunk, UU
     @Modifying
     void deleteByDocumentId(UUID documentId);
 
-    /**
-     * Cosine-distance similarity search scoped to an organization (multi-tenant safe).
-     * pgvector's <=> operator returns distance (lower = more similar).
-     */
     @Query(value = """
             SELECT * FROM document_chunks
             WHERE organization_id = :organizationId

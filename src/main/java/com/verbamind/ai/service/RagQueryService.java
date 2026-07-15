@@ -40,12 +40,7 @@ public class RagQueryService {
         this.usageService = usageService;
     }
 
-    // add this method to the existing RagQueryService class
 
-    /**
-     * Core RAG call without membership/quota concerns — used internally by
-     * ChatService, which already owns those checks at the chat level.
-     */
     public AskQuestionResponse answer(UUID organizationId, String question) {
         usageService.assertAiQuotaAvailable(organizationId);
 
@@ -56,8 +51,7 @@ public class RagQueryService {
                 chunkRepository.findSimilarChunks(organizationId, vectorLiteral, TOP_K);
 
         if (relevantChunks.isEmpty()) {
-            // No relevant docs found — still a successful, cheap request; not
-            // charged against quota since no LLM completion call was made.
+
             return new AskQuestionResponse(
                     "I don't have any relevant documents to answer that question yet.",
                     List.of());
@@ -74,9 +68,6 @@ public class RagQueryService {
 
         String answer = aiProvider.generateCompletion(systemPrompt, userPrompt);
 
-        // Only record quota consumption on a successful completion — if
-        // aiProvider.generateCompletion() throws above, this line never runs,
-        // satisfying "only successful AI requests consume quota."
         long approxTokens = estimateTokens(userPrompt) + estimateTokens(answer);
         usageService.recordAiRequest(organizationId, approxTokens);
 
@@ -85,11 +76,7 @@ public class RagQueryService {
         return new AskQuestionResponse(answer, citations);
     }
 
-    /**
-     * Rough token estimate (chars / 4) since providers don't uniformly return
-     * usage stats through this abstraction yet. Good enough for quota display;
-     * swap for provider-reported usage later if precision matters.
-     */
+
     private long estimateTokens(String text) {
         return text == null ? 0 : Math.max(1, text.length() / 4);
     }

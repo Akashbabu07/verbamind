@@ -39,11 +39,6 @@ public class SubscriptionService {
         this.organizationRepository = organizationRepository;
         this.accessGuard = accessGuard;
     }
-
-    /**
-     * Called from OrganizationService right after an organization (personal
-     * or team) is created, so every org always has a subscription row.
-     */
     @Transactional
     public Subscription createFreeSubscription(Organization organization) {
         Plan freePlan = planRepository.findByCode(PlanCode.FREE)
@@ -72,10 +67,7 @@ public class SubscriptionService {
         return toSubscriptionResponse(sub);
     }
 
-    /**
-     * Direct plan swap (used internally / by admin, or by PaymentService
-     * once Razorpay payment verification succeeds in Step 9).
-     */
+
     @Transactional
     public SubscriptionResponse changePlan(UUID organizationId, PlanCode planCode) {
         Subscription sub = getSubscriptionOrThrow(organizationId);
@@ -92,18 +84,6 @@ public class SubscriptionService {
         return toSubscriptionResponse(sub);
     }
 
-    /**
-     * User-facing "upgrade" request. For FREE it applies immediately since
-     * no payment is required. For PRO/ENTERPRISE, this only validates
-     * membership + plan existence — actual activation happens after Razorpay
-     * payment verification in Step 9 (PaymentService calls changePlan()).
-     */
-    /**
-     * User-facing "upgrade" request. FREE applies immediately (no payment
-     * needed). For PRO/ENTERPRISE, this now tells the caller payment is
-     * required instead of silently no-op'ing — the frontend should then call
-     * POST /payments/create-order to get a Razorpay order and open checkout.
-     */
     @Transactional
     public UpgradeResultResponse requestUpgrade(UUID currentUserId, UUID organizationId, UpgradePlanRequest request) {
         accessGuard.requireRole(organizationId, currentUserId, OrganizationRole.ADMIN);
@@ -127,10 +107,7 @@ public class SubscriptionService {
         return toSubscriptionResponse(sub);
     }
 
-    /**
-     * Used by DocumentService/UsageService (Step 5/10) to check limits without
-     * needing membership context — internal call, no accessGuard here.
-     */
+
     public Plan getActivePlan(UUID organizationId) {
         return getSubscriptionOrThrow(organizationId).getPlan();
     }

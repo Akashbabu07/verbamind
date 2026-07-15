@@ -44,11 +44,7 @@ public class DocumentIngestionService {
         this.aiProvider = aiProvider;
     }
 
-    /**
-     * Runs the full pipeline: Extract -> Chunk -> Embed -> Store -> Ready.
-     * Called asynchronously right after upload so the HTTP response isn't
-     * blocked on embedding generation (can take several seconds per doc).
-     */
+
     @Async
     @Transactional
     public void processDocument(UUID documentId) {

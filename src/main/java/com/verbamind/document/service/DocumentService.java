@@ -32,11 +32,11 @@ public class DocumentService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "text/plain"
     );
 
-    private static final long MAX_FILE_SIZE = 25L * 1024 * 1024; // 25 MB — keep in sync with application.yml multipart limits
+    private static final long MAX_FILE_SIZE = 25L * 1024 * 1024;
 
     private final DocumentRepository documentRepository;
     private final OrganizationRepository organizationRepository;
@@ -97,7 +97,6 @@ public class DocumentService {
         documentRepository.save(doc);
 
          ingestionService.processDocument(doc.getId());
-        // which will flip status UPLOADED -> PROCESSING -> READY/FAILED.
 
         return toResponse(doc);
     }
