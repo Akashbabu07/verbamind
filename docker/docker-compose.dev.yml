@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: documind-postgres
     environment:
       POSTGRES_DB: documind
@@ -36,9 +36,10 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ollama:/root/.ollama
 
 volumes:
   postgres_data:
   minio_data:
-  ollama_data:
+  ollama:
+    external: true
