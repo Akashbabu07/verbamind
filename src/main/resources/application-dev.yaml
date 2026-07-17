@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url:
+    username:
+    password:
+  data:
+    redis:
+      host:
+      port:
+
+verbamind:
+  jwt:
+    secret: dev-secret-change-me-dev-secret-change-me
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
+  minio:
+    endpoint:  http://localhost:9000
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: verbamind-dev
+  ai:
+    provider: ollama
+    ollama:
+      base-url: http://localhost:11434
+      embedding-model: nomic-embed-text
+      chat-model: llama3.2
+
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder}
+    key-secret: ${RAZORPAY_KEY_SECRET:test_secret_placeholder}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:test_webhook_secret}
