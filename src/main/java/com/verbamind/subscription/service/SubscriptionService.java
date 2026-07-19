@@ -100,7 +100,7 @@ public class SubscriptionService {
     }
     @Transactional
     public SubscriptionResponse cancelPlan(UUID currentUserId, UUID organizationId) {
-        accessGuard.requireMembership(organizationId, currentUserId);
+        accessGuard.requireRole(organizationId, currentUserId, OrganizationRole.ADMIN);
         Subscription sub = getSubscriptionOrThrow(organizationId);
         sub.setCancelAtPeriodEnd(true);
         subscriptionRepository.save(sub);

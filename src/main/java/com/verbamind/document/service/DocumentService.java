@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -32,11 +33,11 @@ public class DocumentService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
             "text/plain"
     );
 
-    private static final long MAX_FILE_SIZE = 25L * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 25L * 1024 * 1024; // 25 MB — keep in sync with application.yml multipart limits
 
     private final DocumentRepository documentRepository;
     private final OrganizationRepository organizationRepository;
@@ -71,7 +72,7 @@ public class DocumentService {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new FileTooLargeException(MAX_FILE_SIZE);
         }
-         usageService.assertStorageQuotaAvailable(organizationId, file.getSize());
+        usageService.assertStorageQuotaAvailable(organizationId, file.getSize());
 
         Organization org = organizationRepository.findById(organizationId)
                 .orElseThrow(() -> new OrganizationNotFoundException("Organization not found"));
@@ -96,7 +97,21 @@ public class DocumentService {
         doc.setStatus(DocumentStatus.UPLOADED);
         documentRepository.save(doc);
 
-         ingestionService.processDocument(doc.getId());
+        UUID documentId = doc.getId();
+        TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        // Only fire the async ingestion pipeline once this transaction has
+                        // actually committed, so processDocument()'s own transaction can
+                        // see the Document row via findById(). Firing this mid-transaction
+                        // causes a silent no-op (see processDocument's null guard) because
+                        // the row isn't visible to the other thread/connection yet.
+                        ingestionService.processDocument(documentId);
+                    }
+                }
+        );
+        // ingestionService.processDocument() will flip status UPLOADED -> PROCESSING -> READY/FAILED.
 
         return toResponse(doc);
     }
@@ -143,7 +158,7 @@ public class DocumentService {
         documentRepository.save(doc);
         storageService.delete(doc.getStorageKey());
 
-         ingestionService.deleteEmbeddings(documentId);
+        ingestionService.deleteEmbeddings(documentId);
     }
 
     private Document getDocOrThrow(UUID organizationId, UUID documentId) {

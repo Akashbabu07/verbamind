@@ -42,7 +42,7 @@ public class RagQueryService {
 
 
     public AskQuestionResponse answer(UUID organizationId, String question) {
-        usageService.assertAiQuotaAvailable(organizationId);
+        usageService.reserveAiRequest(organizationId);
 
         float[] questionEmbedding = aiProvider.generateEmbedding(question);
         String vectorLiteral = toVectorLiteral(questionEmbedding);
@@ -69,7 +69,7 @@ public class RagQueryService {
         String answer = aiProvider.generateCompletion(systemPrompt, userPrompt);
 
         long approxTokens = estimateTokens(userPrompt) + estimateTokens(answer);
-        usageService.recordAiRequest(organizationId, approxTokens);
+        usageService.addTokensUsed(organizationId, approxTokens);
 
         List<CitationDto> citations = buildCitations(relevantChunks);
 

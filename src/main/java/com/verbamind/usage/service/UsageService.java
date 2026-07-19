@@ -35,12 +35,21 @@ public class UsageService {
         this.accessGuard = accessGuard;
     }
 
-    public void assertAiQuotaAvailable(UUID organizationId) {
+    /**
+     * Atomically checks the daily/monthly AI quota and, if there's room, reserves one
+     * request against today's count in the same row-locked transaction. Call this instead
+     * of a separate check-then-increment around anything that isn't instantaneous (e.g. an
+     * LLM call): checking and incrementing as two separate steps leaves a window where
+     * concurrent requests can all pass the check before any of them commits, letting the
+     * quota be exceeded.
+     */
+    @Transactional
+    public void reserveAiRequest(UUID organizationId) {
         Plan plan = subscriptionService.getActivePlan(organizationId);
         LocalDate today = LocalDate.now();
 
-        long requestsToday = todayUsage(organizationId, today).getAiRequests();
-        if (requestsToday >= plan.getDailyAiQuestionLimit()) {
+        UsageDaily usage = lockedTodayUsage(organizationId, today);
+        if (usage.getAiRequests() >= plan.getDailyAiQuestionLimit()) {
             throw new QuotaExceededException(
                     "Daily AI question limit reached (" + plan.getDailyAiQuestionLimit() + "). Try again tomorrow or upgrade your plan.");
         }
@@ -50,6 +59,17 @@ public class UsageService {
             throw new QuotaExceededException(
                     "Monthly AI question limit reached (" + plan.getMonthlyAiQuestionLimit() + "). Upgrade your plan to continue.");
         }
+
+        usage.setAiRequests(usage.getAiRequests() + 1);
+        usageDailyRepository.save(usage);
+    }
+
+    /** Adds token usage to today's row after the actual request completes. Doesn't gate anything. */
+    @Transactional
+    public void addTokensUsed(UUID organizationId, long tokensUsed) {
+        UsageDaily usage = lockedTodayUsage(organizationId, LocalDate.now());
+        usage.setTokensUsed(usage.getTokensUsed() + tokensUsed);
+        usageDailyRepository.save(usage);
     }
 
     public void assertStorageQuotaAvailable(UUID organizationId, long incomingFileSize) {
@@ -61,16 +81,6 @@ public class UsageService {
                     "Storage limit reached (" + (plan.getStorageLimitBytes() / (1024 * 1024)) + " MB). Delete files or upgrade your plan.");
         }
     }
-    @Transactional
-    public void recordAiRequest(UUID organizationId, long tokensUsed) {
-        LocalDate today = LocalDate.now();
-        UsageDaily usage = todayUsage(organizationId, today);
-        usage.setAiRequests(usage.getAiRequests() + 1);
-        usage.setTokensUsed(usage.getTokensUsed() + tokensUsed);
-        usageDailyRepository.save(usage);
-    }
-
-
     public UsageResponse getUsageSummary(UUID currentUserId, UUID organizationId) {
         accessGuard.requireMembership(organizationId, currentUserId);
 
@@ -96,6 +106,31 @@ public class UsageService {
                     fresh.setOrganizationId(organizationId);
                     fresh.setUsageDate(date);
                     return usageDailyRepository.save(fresh);
+                });
+    }
+
+    /**
+     * Same as todayUsage() but takes a row lock on an existing row (via
+     * findByOrganizationIdAndUsageDateForUpdate) so the caller can safely check-then-increment
+     * it. If no row exists yet for today, creates one; a unique constraint on
+     * (organization_id, usage_date) means a concurrent first request for the same org/day can
+     * lose that race, so we catch the constraint violation and re-fetch (now with a lock)
+     * instead of letting it surface as a 500.
+     */
+    private UsageDaily lockedTodayUsage(UUID organizationId, LocalDate date) {
+        return usageDailyRepository.findByOrganizationIdAndUsageDateForUpdate(organizationId, date)
+                .orElseGet(() -> {
+                    try {
+                        UsageDaily fresh = new UsageDaily();
+                        fresh.setOrganizationId(organizationId);
+                        fresh.setUsageDate(date);
+                        usageDailyRepository.save(fresh);
+                        usageDailyRepository.flush();
+                        return fresh;
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        return usageDailyRepository.findByOrganizationIdAndUsageDateForUpdate(organizationId, date)
+                                .orElseThrow(() -> e);
+                    }
                 });
     }
 

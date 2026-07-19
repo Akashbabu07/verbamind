@@ -44,12 +44,14 @@ public class DocumentIngestionService {
         this.aiProvider = aiProvider;
     }
 
-
     @Async
     @Transactional
     public void processDocument(UUID documentId) {
         Document doc = documentRepository.findById(documentId).orElse(null);
-        if (doc == null) return;
+        if (doc == null) {
+            log.warn("processDocument called for unknown/not-yet-visible document {}", documentId);
+            return;
+        }
 
         try {
             doc.setStatus(DocumentStatus.PROCESSING);
