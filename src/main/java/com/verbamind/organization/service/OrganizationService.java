@@ -98,6 +98,7 @@ public class OrganizationService {
         return toResponse(org, membership.getRole());
     }
 
+    @Transactional(readOnly = true)
     public List<OrganizationResponse> listMyOrganizations(UUID currentUserId) {
         return membershipRepository.findByUserId(currentUserId).stream()
                 .filter(m -> m.getStatus() == MembershipStatus.ACTIVE)
@@ -126,7 +127,7 @@ public class OrganizationService {
 
         membershipRepository.save(membership);
 
-        emailService.sendVerificationEmail(request.email(), membership.getInviteToken());
+        emailService.sendOrganizationInviteEmail(request.email(), org.getName(), membership.getInviteToken());
 
         return toMembershipResponse(membership);
     }
@@ -152,6 +153,7 @@ public class OrganizationService {
         return toMembershipResponse(membership);
     }
 
+    @Transactional(readOnly = true)
     public List<MembershipResponse> listMembers(UUID currentUserId, UUID organizationId) {
         getOrgOrThrow(organizationId);
         requireMembership(organizationId, currentUserId);
@@ -169,8 +171,11 @@ public class OrganizationService {
         Membership membership = membershipRepository.findById(membershipId)
                 .orElseThrow(() -> new OrganizationNotFoundException("Membership not found"));
 
-        if (membership.getRole() == OrganizationRole.OWNER) {
-            throw new InsufficientRoleException(); // owner role can't be reassigned via this endpoint
+        if (membership.getRole() == OrganizationRole.OWNER || request.role() == OrganizationRole.OWNER) {
+            // Ownership can't be granted or taken away via this ADMIN-level endpoint: it would let
+            // an ADMIN self-promote to OWNER (or create a second OWNER), which is a privilege
+            // escalation. Ownership transfer needs its own dedicated, owner-only flow.
+            throw new InsufficientRoleException();
         }
 
         membership.setRole(request.role());

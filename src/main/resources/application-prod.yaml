@@ -7,8 +7,28 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 verbamind:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+  mail:
+    from: ${MAIL_USERNAME}
+    verification-base-url: ${APP_BASE_URL}/api/auth/verify-email
+    reset-base-url: ${APP_BASE_URL}/api/auth/reset-password
+    invite-base-url: ${APP_BASE_URL}/api/organizations/members/accept-invite
+
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration-ms: 900000
@@ -27,11 +47,11 @@ verbamind:
     claude:
       api-key: ${ANTHROPIC_API_KEY}
 
-logging:
-  level:
-    com.verbamind: INFO
-
   razorpay:
     key-id: ${RAZORPAY_KEY_ID}
     key-secret: ${RAZORPAY_KEY_SECRET}
     webhook-secret: ${RAZORPAY_WEBHOOK_SECRET}
+
+logging:
+  level:
+    com.verbamind: INFO

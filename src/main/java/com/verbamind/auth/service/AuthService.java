@@ -11,7 +11,6 @@ import com.verbamind.auth.repository.UserRepository;
 import com.verbamind.organization.service.OrganizationService;
 import com.verbamind.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -57,7 +56,16 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setFullName(request.fullName());
         user.setVerificationToken(UUID.randomUUID().toString());
-        userRepository.save(user);
+
+        try {
+            // existsByEmail() above and this save() aren't atomic, so two concurrent
+            // registrations with the same email can both pass the check. The unique
+            // constraint on users.email is the real guard; translate its violation into
+            // the same clean 409 instead of letting it surface as a generic 500.
+            userRepository.saveAndFlush(user);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new EmailAlreadyExistsException(request.email());
+        }
 
         emailService.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
         organizationService.createPersonalWorkspace(user);
@@ -69,7 +77,10 @@ public class AuthService {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
-        } catch (BadCredentialsException e) {
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            // Covers bad credentials as well as DisabledException/LockedException thrown
+            // for disabled or deleted accounts. Deliberately don't distinguish the reason
+            // in the response, to avoid leaking account status to an unauthenticated caller.
             throw new InvalidCredentialsException();
         }
 

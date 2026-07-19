@@ -47,10 +47,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UUID userId = jwtService.extractUserId(token);
             UserDetails userDetails = userDetailsService.loadUserById(userId);
 
-            var authToken = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authToken);
+            // A previously-issued access token stays cryptographically valid until it
+            // expires even if the account is disabled/deleted/locked in the meantime
+            // (e.g. an admin ban). Re-check the live account flags on every request so
+            // that action takes effect immediately instead of waiting out the token TTL.
+            if (userDetails.isEnabled() && userDetails.isAccountNonLocked()
+                    && userDetails.isAccountNonExpired() && userDetails.isCredentialsNonExpired()) {
+                var authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
         }
 
         filterChain.doFilter(request, response);
