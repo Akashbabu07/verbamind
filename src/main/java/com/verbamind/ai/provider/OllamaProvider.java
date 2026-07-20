@@ -41,7 +41,17 @@ public class OllamaProvider implements AiProvider {
                     .build();
             HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
             JsonNode json = mapper.readTree(res.body());
+
+            if (json.has("error")) {
+                throw new AiProviderException("Ollama embedding request failed: " + json.get("error").asText());
+            }
+
             JsonNode arr = json.get("embedding");
+            if (arr == null || !arr.isArray()) {
+                throw new AiProviderException(
+                        "Ollama embedding request failed: unexpected response (HTTP " + res.statusCode() + "): " + res.body());
+            }
+
             float[] vector = new float[arr.size()];
             for (int i = 0; i < arr.size(); i++) vector[i] = (float) arr.get(i).asDouble();
             return vector;
@@ -75,7 +85,18 @@ public class OllamaProvider implements AiProvider {
                     .build();
             HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
             JsonNode json = mapper.readTree(res.body());
-            return json.get("message").get("content").asText();
+
+            if (json.has("error")) {
+                throw new AiProviderException("Ollama completion request failed: " + json.get("error").asText());
+            }
+
+            JsonNode message = json.get("message");
+            if (message == null || message.get("content") == null) {
+                throw new AiProviderException(
+                        "Ollama completion request failed: unexpected response (HTTP " + res.statusCode() + "): " + res.body());
+            }
+
+            return message.get("content").asText();
         } catch (Exception e) {
             throw new AiProviderException("Ollama completion request failed: " + e.getMessage());
         }

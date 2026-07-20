@@ -107,7 +107,7 @@ public class ChatService {
         assistantMessage.setRole(MessageRole.ASSISTANT);
         assistantMessage.setContent(ragResponse.answer());
         assistantMessage.setCitations(serializeCitations(ragResponse.citations()));
-        messageRepository.save(assistantMessage);
+        messageRepository.saveAndFlush(assistantMessage);
 
 
         chat.setTitle(chat.getTitle());
