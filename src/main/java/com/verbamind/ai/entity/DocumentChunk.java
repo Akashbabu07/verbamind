@@ -27,6 +27,7 @@ public class DocumentChunk {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Type(PGVectorType.class)
     @Column(columnDefinition = "vector(768)")
     private PGvector embedding;
 

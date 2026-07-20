@@ -3,6 +3,7 @@ package com.verbamind.usage.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +41,7 @@ public class UsageDaily {
     @Column(name = "created_at", updatable = false, insertable = false)
     private Instant createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at", insertable = false)
     private Instant updatedAt;
 
