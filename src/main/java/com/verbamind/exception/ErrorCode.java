@@ -7,5 +7,7 @@ public enum ErrorCode {
     FORBIDDEN,
     CONFLICT,
     QUOTA_EXCEEDED,
+    RATE_LIMIT_EXCEEDED,
     INTERNAL_ERROR,
+
 }

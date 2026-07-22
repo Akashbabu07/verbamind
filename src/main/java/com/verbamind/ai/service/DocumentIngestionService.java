@@ -4,6 +4,7 @@ import com.pgvector.PGvector;
 import com.verbamind.ai.entity.DocumentChunk;
 import com.verbamind.ai.provider.AiProvider;
 import com.verbamind.ai.repository.DocumentChunkRepository;
+import com.verbamind.auth.service.EmailService;
 import com.verbamind.document.entity.Document;
 import com.verbamind.document.entity.DocumentStatus;
 import com.verbamind.document.repository.DocumentRepository;
@@ -29,19 +30,22 @@ public class DocumentIngestionService {
     private final TextExtractionService textExtractionService;
     private final ChunkingService chunkingService;
     private final AiProvider aiProvider;
+    private final EmailService emailService;
 
     public DocumentIngestionService(DocumentRepository documentRepository,
                                     DocumentChunkRepository chunkRepository,
                                     StorageService storageService,
                                     TextExtractionService textExtractionService,
                                     ChunkingService chunkingService,
-                                    AiProvider aiProvider) {
+                                    AiProvider aiProvider,
+                                    EmailService emailService) {
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
         this.storageService = storageService;
         this.textExtractionService = textExtractionService;
         this.chunkingService = chunkingService;
         this.aiProvider = aiProvider;
+        this.emailService = emailService;
     }
 
     @Async
@@ -66,6 +70,7 @@ public class DocumentIngestionService {
             if (chunks.isEmpty()) {
                 doc.setStatus(DocumentStatus.FAILED);
                 documentRepository.save(doc);
+                emailService.sendDocumentFailedEmail(doc.getOwner().getEmail(), doc.getFileName());
                 return;
             }
 
@@ -83,11 +88,13 @@ public class DocumentIngestionService {
 
             doc.setStatus(DocumentStatus.READY);
             documentRepository.save(doc);
+            emailService.sendDocumentReadyEmail(doc.getOwner().getEmail(), doc.getFileName());
 
         } catch (Exception e) {
             log.error("Ingestion failed for document {}: {}", documentId, e.getMessage(), e);
             doc.setStatus(DocumentStatus.FAILED);
             documentRepository.save(doc);
+            emailService.sendDocumentFailedEmail(doc.getOwner().getEmail(), doc.getFileName());
         }
     }
 

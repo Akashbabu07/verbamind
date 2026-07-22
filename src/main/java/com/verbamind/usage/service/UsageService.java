@@ -35,6 +35,14 @@ public class UsageService {
         this.accessGuard = accessGuard;
     }
 
+    /**
+     * Atomically checks the daily/monthly AI quota and, if there's room, reserves one
+     * request against today's count in the same row-locked transaction. Call this instead
+     * of a separate check-then-increment around anything that isn't instantaneous (e.g. an
+     * LLM call): checking and incrementing as two separate steps leaves a window where
+     * concurrent requests can all pass the check before any of them commits, letting the
+     * quota be exceeded.
+     */
     @Transactional
     public void reserveAiRequest(UUID organizationId) {
         Plan plan = subscriptionService.getActivePlan(organizationId);
@@ -56,6 +64,7 @@ public class UsageService {
         usageDailyRepository.save(usage);
     }
 
+    /** Adds token usage to today's row after the actual request completes. Doesn't gate anything. */
     @Transactional
     public void addTokensUsed(UUID organizationId, long tokensUsed) {
         UsageDaily usage = lockedTodayUsage(organizationId, LocalDate.now());
@@ -101,7 +110,14 @@ public class UsageService {
                 });
     }
 
-
+    /**
+     * Same as todayUsage() but takes a row lock on an existing row (via
+     * findByOrganizationIdAndUsageDateForUpdate) so the caller can safely check-then-increment
+     * it. If no row exists yet for today, creates one; a unique constraint on
+     * (organization_id, usage_date) means a concurrent first request for the same org/day can
+     * lose that race, so we catch the constraint violation and re-fetch (now with a lock)
+     * instead of letting it surface as a 500.
+     */
     private UsageDaily lockedTodayUsage(UUID organizationId, LocalDate date) {
         return usageDailyRepository.findByOrganizationIdAndUsageDateForUpdate(organizationId, date)
                 .orElseGet(() -> {
@@ -132,7 +148,9 @@ public class UsageService {
     }
 
     private long currentStorageUsedBytes(UUID organizationId) {
-
+        // Sums file_size across all non-deleted documents for the org.
+        // Simple enough at V1 scale; if this becomes a hot path at larger
+        // scale, replace with a native SUM() query instead of loading rows.
         return documentRepository.findByOrganizationIdAndDeletedFalse(organizationId,
                         org.springframework.data.domain.Pageable.unpaged())
                 .stream()

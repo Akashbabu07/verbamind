@@ -2,6 +2,7 @@ package com.verbamind.payment.service;
 
 import com.razorpay.RazorpayClient;
 import com.razorpay.Utils;
+import com.verbamind.auth.service.EmailService;
 import com.verbamind.organization.entity.OrganizationRole;
 import com.verbamind.document.service.OrganizationAccessGuard;
 import com.verbamind.payment.dto.*;
@@ -39,6 +40,7 @@ public class PaymentService {
     private final OrganizationAccessGuard accessGuard;
     private final SubscriptionService subscriptionService;
     private final com.verbamind.organization.repository.OrganizationRepository organizationRepository;
+    private final EmailService emailService;
 
     public PaymentService(PaymentRepository paymentRepository,
                           PlanRepository planRepository,
@@ -46,7 +48,8 @@ public class PaymentService {
                           RazorpayProperties razorpayProperties,
                           OrganizationAccessGuard accessGuard,
                           SubscriptionService subscriptionService,
-                          com.verbamind.organization.repository.OrganizationRepository organizationRepository) {
+                          com.verbamind.organization.repository.OrganizationRepository organizationRepository,
+                          EmailService emailService) {
         this.paymentRepository = paymentRepository;
         this.planRepository = planRepository;
         this.razorpayClient = razorpayClient;
@@ -54,6 +57,7 @@ public class PaymentService {
         this.accessGuard = accessGuard;
         this.subscriptionService = subscriptionService;
         this.organizationRepository = organizationRepository;
+        this.emailService = emailService;
     }
 
 
@@ -173,6 +177,11 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         subscriptionService.changePlan(payment.getOrganization().getId(), payment.getPlan().getCode());
+
+        emailService.sendPaymentSuccessEmail(
+                payment.getOrganization().getOwner().getEmail(),
+                payment.getPlan().getName()
+        );
     }
 
     private boolean verifySignature(String orderId, String paymentId, String signature) {
