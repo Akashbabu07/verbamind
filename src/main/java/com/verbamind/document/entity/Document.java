@@ -5,6 +5,8 @@ import com.verbamind.common.entity.BaseEntity;
 import com.verbamind.organization.entity.Organization;
 import jakarta.persistence.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "documents")
 public class Document extends BaseEntity {
@@ -35,6 +37,25 @@ public class Document extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DocumentStatus status = DocumentStatus.UPLOADED;
+
+
+    @Column(name = "folder_id")
+    private UUID folderId;
+
+    public UUID getFolderId() { return folderId; }
+    public void setFolderId(UUID folderId) { this.folderId = folderId; }
+
+    @Column(name = "content_hash", length = 64)
+    private String contentHash;
+
+    @Column(name = "current_version", nullable = false)
+    private int currentVersion = 1;
+
+    public int getCurrentVersion() { return currentVersion; }
+    public void setCurrentVersion(int currentVersion) { this.currentVersion = currentVersion; }
+
+    public String getContentHash() { return contentHash; }
+    public void setContentHash(String contentHash) { this.contentHash = contentHash; }
 
     public Organization getOrganization() { return organization; }
     public void setOrganization(Organization organization) { this.organization = organization; }

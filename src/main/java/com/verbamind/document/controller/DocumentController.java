@@ -16,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -100,5 +101,69 @@ public class DocumentController {
             @PathVariable UUID documentId) {
         documentService.delete(currentUser.getId(), organizationId, documentId);
         return ResponseEntity.ok(ApiResponse.success(null, "Document deleted"));
+    }
+
+    @PostMapping("/{documentId}/tags")
+    public ResponseEntity<ApiResponse<Void>> addTag(@PathVariable UUID organizationId,
+                                                    @PathVariable UUID documentId,
+                                                    @RequestBody AddTagRequest request,
+                                                    @AuthenticationPrincipal CustomUserDetails principal) {
+        documentService.addTag(principal.getId(), organizationId, documentId, request.tag());
+        return ResponseEntity.ok(ApiResponse.success(null, "Tag added"));
+    }
+
+    @DeleteMapping("/{documentId}/tags/{tag}")
+    public ResponseEntity<ApiResponse<Void>> removeTag(@PathVariable UUID organizationId,
+                                                       @PathVariable UUID documentId,
+                                                       @PathVariable String tag,
+                                                       @AuthenticationPrincipal CustomUserDetails principal) {
+        documentService.removeTag(principal.getId(), organizationId, documentId, tag);
+        return ResponseEntity.ok(ApiResponse.success(null, "Tag removed"));
+    }
+
+    @GetMapping("/{documentId}/preview")
+    public ResponseEntity<InputStreamResource> preview(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable UUID organizationId,
+            @PathVariable UUID documentId) {
+        var result = documentService.preview(currentUser.getId(), organizationId, documentId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(result.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline().filename(result.fileName()).build().toString())
+                .body(new InputStreamResource(result.stream()));
+    }
+    @PostMapping(value = "/{documentId}/versions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<DocumentResponse>> uploadNewVersion(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable UUID organizationId,
+            @PathVariable UUID documentId,
+            @RequestParam("file") MultipartFile file) {
+        var doc = documentService.uploadNewVersion(currentUser.getId(), organizationId, documentId, file);
+        return ResponseEntity.ok(ApiResponse.success(doc, "New version uploaded"));
+    }
+
+    @GetMapping("/{documentId}/versions")
+    public ResponseEntity<ApiResponse<List<DocumentVersionResponse>>> listVersions(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable UUID organizationId,
+            @PathVariable UUID documentId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                documentService.listVersions(currentUser.getId(), organizationId, documentId)));
+    }
+
+    @GetMapping("/{documentId}/versions/{versionNumber}/download")
+    public ResponseEntity<InputStreamResource> downloadVersion(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable UUID organizationId,
+            @PathVariable UUID documentId,
+            @PathVariable int versionNumber) {
+        var result = documentService.downloadVersion(currentUser.getId(), organizationId, documentId, versionNumber);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(result.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(result.fileName()).build().toString())
+                .body(new InputStreamResource(result.stream()));
     }
 }

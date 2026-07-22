@@ -79,6 +79,39 @@ public class SmtpEmailService implements EmailService {
         send(to, "You're invited to join " + organizationName + " on Verbamind", body);
     }
 
+    @Override
+    public void sendDocumentReadyEmail(String to, String fileName) {
+        String body = """
+                Good news — "%s" has finished processing and is ready to use.
+
+                You can now ask questions about it in Verbamind.
+                """.formatted(fileName);
+
+        send(to, "\"" + fileName + "\" is ready", body);
+    }
+
+    @Override
+    public void sendDocumentFailedEmail(String to, String fileName) {
+        String body = """
+                We ran into a problem processing "%s" and couldn't finish preparing it for search.
+
+                You can try uploading it again, or reach out if this keeps happening.
+                """.formatted(fileName);
+
+        send(to, "\"" + fileName + "\" failed to process", body);
+    }
+
+    @Override
+    public void sendPaymentSuccessEmail(String to, String planName) {
+        String body = """
+                Thanks for upgrading! Your workspace is now on the %s plan.
+
+                Your new usage limits are active immediately.
+                """.formatted(planName);
+
+        send(to, "You're now on the " + planName + " plan", body);
+    }
+
     private void send(String to, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
