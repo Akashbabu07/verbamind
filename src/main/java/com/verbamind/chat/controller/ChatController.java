@@ -1,5 +1,5 @@
 package com.verbamind.chat.controller;
-
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.verbamind.chat.dto.*;
 import com.verbamind.chat.service.ChatService;
 import com.verbamind.common.dto.ApiResponse;
@@ -18,9 +18,11 @@ import java.util.UUID;
 public class ChatController {
 
     private final ChatService chatService;
+    private final java.util.concurrent.ExecutorService chatStreamExecutor;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, java.util.concurrent.ExecutorService chatStreamExecutor) {
         this.chatService = chatService;
+        this.chatStreamExecutor = chatStreamExecutor;
     }
 
     @PostMapping
@@ -80,5 +82,39 @@ public class ChatController {
             @PathVariable UUID chatId) {
         chatService.deleteChat(currentUser.getId(), organizationId, chatId);
         return ResponseEntity.ok(ApiResponse.success(null, "Chat deleted"));
+    }
+
+    @PostMapping(value = "/{chatId}/messages/stream", produces = "text/event-stream")
+    public SseEmitter sendMessageStream(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable UUID organizationId,
+            @PathVariable UUID chatId,
+            @Valid @RequestBody SendMessageRequest request) {
+
+        SseEmitter emitter = new SseEmitter(60_000L);
+        chatStreamExecutor.submit(() -> {
+            try {
+                chatService.streamMessage(currentUser.getId(), organizationId, chatId, request,
+                        token -> {
+                            try {
+                                emitter.send(SseEmitter.event().name("token").data(token));
+                            } catch (Exception e) {
+                                emitter.completeWithError(e);
+                            }
+                        },
+                        () -> {
+                            try {
+                                emitter.send(SseEmitter.event().name("done").data(""));
+                                emitter.complete();
+                            } catch (Exception e) {
+                                emitter.completeWithError(e);
+                            }
+                        });
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+        });
+
+        return emitter;
     }
 }

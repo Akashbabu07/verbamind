@@ -44,8 +44,6 @@ verbamind:
       api-key: ${OPENAI_API_KEY}
     gemini:
       api-key: ${GEMINI_API_KEY}
-    claude:
-      api-key: ${ANTHROPIC_API_KEY}
 
   razorpay:
     key-id: ${RAZORPAY_KEY_ID}

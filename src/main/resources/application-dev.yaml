@@ -41,7 +41,7 @@ verbamind:
     ollama:
       base-url: http://localhost:11434
       embedding-model: nomic-embed-text
-      chat-model: llama3.2
+      chat-model: llama3.2:3b
 
   razorpay:
     key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder}

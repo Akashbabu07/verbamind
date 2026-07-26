@@ -19,6 +19,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+/***
+ * this class marked as service means we are going to use this later  it contain
+ * some Business logic
+ * spring create and manage the life cycle of object
+ * ***/
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -30,11 +35,19 @@ public class UserService {
     private final SubscriptionService subscriptionService;
     private final UsageService usageService;
 
+    /**
+     * this method helps to get user register in application  by using unique id
+     * By using helper method getUserOrThrow
+     * **/
     public UserProfileResponse getUserProfile(UUID userId) {
         User user = getUserOrThrow(userId);
         return toProfileResponse(user);
     }
 
+
+    /**
+     * this method help us to
+     * **/
     @Transactional
     public UserProfileResponse updateUserProfile(UUID userId, UpdateProfileRequest request) {
         User user = getUserOrThrow(userId);

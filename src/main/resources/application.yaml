@@ -25,11 +25,25 @@ server:
 management:
   endpoints:
     web:
-      expose:
-        include: health,info
+      exposure:
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    distribution:
+      percentiles-histogram:
+        ai.embedding.latency: true
+        ai.completion.latency: true
+        ai.hybrid_search.latency: true
+        ai.rag_query.latency: true
+        ai.document_ingestion.latency: true
+      percentiles:
+        ai.embedding.latency: 0.5, 0.95, 0.99
+        ai.completion.latency: 0.5, 0.95, 0.99
+        ai.hybrid_search.latency: 0.5, 0.95, 0.99
+        ai.rag_query.latency: 0.5, 0.95, 0.99
+        ai.document_ingestion.latency: 0.5, 0.95, 0.99
 
 logging:
   level:
