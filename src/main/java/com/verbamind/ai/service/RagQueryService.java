@@ -1,5 +1,6 @@
 package com.verbamind.ai.service;
 
+import io.micrometer.core.annotation.Timed;
 import com.pgvector.PGvector;
 import com.verbamind.ai.dto.AskQuestionRequest;
 import com.verbamind.ai.dto.AskQuestionResponse;
@@ -27,20 +28,23 @@ public class RagQueryService {
     private final AiProvider aiProvider;
     private final OrganizationAccessGuard accessGuard;
     private final UsageService usageService;
+    private final HybridSearchService hybridSearchService;
 
     public RagQueryService(DocumentChunkRepository chunkRepository,
                            DocumentRepository documentRepository,
                            AiProvider aiProvider,
                            OrganizationAccessGuard accessGuard,
-                           UsageService usageService) {
+                           UsageService usageService,HybridSearchService hybridSearchService) {
         this.chunkRepository = chunkRepository;
         this.documentRepository = documentRepository;
         this.aiProvider = aiProvider;
         this.accessGuard = accessGuard;
         this.usageService = usageService;
+        this.hybridSearchService = hybridSearchService;
     }
 
 
+    @Timed(value = "ai.rag_query.latency", extraTags = {"mode", "sync"})
     public AskQuestionResponse answer(UUID organizationId, String question) {
         usageService.reserveAiRequest(organizationId);
 
@@ -48,7 +52,7 @@ public class RagQueryService {
         String vectorLiteral = toVectorLiteral(questionEmbedding);
 
         List<DocumentChunk> relevantChunks =
-                chunkRepository.findSimilarChunks(organizationId, vectorLiteral, TOP_K);
+                hybridSearchService.search(organizationId, question, vectorLiteral, TOP_K);
 
         if (relevantChunks.isEmpty()) {
 
@@ -81,6 +85,7 @@ public class RagQueryService {
         return text == null ? 0 : Math.max(1, text.length() / 4);
     }
 
+    @Timed(value = "ai.rag_query.latency", extraTags = {"mode", "sync"})
     public AskQuestionResponse ask(UUID currentUserId, UUID organizationId, AskQuestionRequest request) {
         accessGuard.requireMembership(organizationId, currentUserId);
         return answer(organizationId, request.question());
@@ -95,7 +100,6 @@ public class RagQueryService {
     }
 
     private List<CitationDto> buildCitations(List<DocumentChunk> chunks) {
-        // cache document filenames to avoid N+1 lookups when multiple chunks share a document
         Map<UUID, String> fileNameCache = new LinkedHashMap<>();
         List<CitationDto> citations = new java.util.ArrayList<>();
 
@@ -121,5 +125,47 @@ public class RagQueryService {
             sb.append(vector[i]);
         }
         return sb.append("]").toString();
+    }
+    @Timed(value = "ai.rag_query.latency", extraTags = {"mode", "stream"})
+    public void answerStream(UUID organizationId, String question,
+                             java.util.function.Consumer<String> onToken,
+                             java.util.function.BiConsumer<String, List<CitationDto>> onComplete) {
+        usageService.reserveAiRequest(organizationId);
+
+        float[] questionEmbedding = aiProvider.generateEmbedding(question);
+        String vectorLiteral = toVectorLiteral(questionEmbedding);
+
+        List<DocumentChunk> relevantChunks =
+                hybridSearchService.search(organizationId, question, vectorLiteral, TOP_K);
+
+        if (relevantChunks.isEmpty()) {
+            String message = "I don't have any relevant documents to answer that question yet.";
+            onToken.accept(message);
+            onComplete.accept(message, List.of());
+            return;
+        }
+
+        String context = buildContext(relevantChunks);
+        String systemPrompt = """
+        You are verbamind, an assistant that answers questions strictly using the
+        provided document excerpts. Always cite which excerpt(s) support each
+        claim using [1], [2], etc. If the excerpts don't contain the answer,
+        say so honestly instead of guessing.
+        """;
+        String userPrompt = "Context:\n" + context + "\n\nQuestion: " + question;
+
+        StringBuilder fullAnswer = new StringBuilder();
+
+        aiProvider.generateCompletionStream(systemPrompt, userPrompt,
+                token -> {
+                    fullAnswer.append(token);
+                    onToken.accept(token);
+                },
+                () -> {
+                    long approxTokens = estimateTokens(userPrompt) + estimateTokens(fullAnswer.toString());
+                    usageService.addTokensUsed(organizationId, approxTokens);
+                    List<CitationDto> citations = buildCitations(relevantChunks);
+                    onComplete.accept(fullAnswer.toString(), citations);
+                });
     }
 }

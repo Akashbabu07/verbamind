@@ -116,6 +116,29 @@ public class ChatService {
         return toMessageResponse(assistantMessage);
     }
 
+    public void streamMessage(UUID currentUserId, UUID organizationId, UUID chatId, SendMessageRequest request,
+                              java.util.function.Consumer<String> onToken, Runnable onDone) {
+        Chat chat = getOwnedChatOrThrow(organizationId, currentUserId, chatId);
+
+        Message userMessage = new Message();
+        userMessage.setChat(chat);
+        userMessage.setRole(MessageRole.USER);
+        userMessage.setContent(request.content());
+        messageRepository.save(userMessage);
+
+        ragQueryService.answerStream(organizationId, request.content(),
+                onToken,
+                (fullAnswer, citations) -> {
+                    Message assistantMessage = new Message();
+                    assistantMessage.setChat(chat);
+                    assistantMessage.setRole(MessageRole.ASSISTANT);
+                    assistantMessage.setContent(fullAnswer);
+                    assistantMessage.setCitations(serializeCitations(citations));
+                    messageRepository.saveAndFlush(assistantMessage);
+                    onDone.run();
+                });
+    }
+
     @Transactional
     public ChatResponse renameChat(UUID currentUserId, UUID organizationId, UUID chatId, RenameChatRequest request) {
         accessGuard.requireMembership(organizationId, currentUserId);

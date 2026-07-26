@@ -23,4 +23,15 @@ public interface DocumentChunkRepository extends JpaRepository<DocumentChunk, UU
     List<DocumentChunk> findSimilarChunks(@Param("organizationId") UUID organizationId,
                                           @Param("embedding") String embedding,
                                           @Param("topK") int topK);
+
+    @Query(value = """
+        SELECT * FROM document_chunks
+        WHERE organization_id = :organizationId
+          AND content_tsv @@ plainto_tsquery('english', :query)
+        ORDER BY ts_rank(content_tsv, plainto_tsquery('english', :query)) DESC
+        LIMIT :topK
+        """, nativeQuery = true)
+    List<DocumentChunk> findByFullTextSearch(@Param("organizationId") UUID organizationId,
+                                             @Param("query") String query,
+                                             @Param("topK") int topK);
 }

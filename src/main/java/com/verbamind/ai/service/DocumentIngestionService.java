@@ -1,5 +1,6 @@
 package com.verbamind.ai.service;
 
+import io.micrometer.core.annotation.Timed;
 import com.pgvector.PGvector;
 import com.verbamind.ai.entity.DocumentChunk;
 import com.verbamind.ai.provider.AiProvider;
@@ -50,6 +51,7 @@ public class DocumentIngestionService {
 
     @Async
     @Transactional
+    @Timed(value = "ai.document_ingestion.latency")
     public void processDocument(UUID documentId) {
         Document doc = documentRepository.findById(documentId).orElse(null);
         if (doc == null) {

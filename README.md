@@ -1,6 +1,3 @@
-
-
-````markdown
 # Verbamind
 
 Verbamind is an AI-powered document Q&A (RAG) platform. Users upload documents, and the system answers natural-language questions about them with citations back to the exact source passages.
@@ -173,17 +170,47 @@ Authorization: Bearer <access_token>
 
 Flyway migrations live in `src/main/resources/db/migration` and run automatically on startup, in order from `V1__init.sql` through `V9__usage.sql`.
 
+## Deployment
+
+**Build and run with Docker:**
+
+```bash
+cp .env.example .env   # fill in real values
+cd docker
+docker compose -f docker-compose.prod.yml --env-file ../.env up -d --build
+```
+
+This builds the app image from the root `Dockerfile` (multi-stage Maven build → JRE runtime)
+and starts it alongside Postgres (with pgvector), Redis, and MinIO. The app's `/actuator/health`
+endpoint is used for the container health check.
+
 ## Known Issues
 
-The following should be addressed before deploying to production:
+Resolved:
 
-- [ ] `docker-compose.dev.yml` uses `postgres:16-alpine`, which lacks the pgvector extension required by `V5__ai.sql`. Switch to `pgvector/pgvector:pg16`.
-- [ ] `application-dev.yaml` ships with blank datasource and Redis values; fill in local defaults.
-- [ ] `application-prod.yaml` has the `razorpay:` block incorrectly nested under `logging:` instead of under `verbamind:`, so Razorpay properties won't bind at runtime.
-- [ ] `docker-compose.prod.yml` is currently empty and needs a production deployment definition.
-- [ ] `docker/.env.example` is empty; populate it with the variables listed above.
+- [x] `docker-compose.dev.yml` already uses `pgvector/pgvector:pg16` (has the pgvector extension required by `V5__ai.sql`).
+- [x] `application-dev.yaml` has local datasource/Redis/MinIO defaults filled in.
+- [x] `application-prod.yaml`'s `razorpay:` block is correctly nested under `verbamind:`.
+- [x] `docker-compose.prod.yml` now defines a full production stack (app + postgres + redis + minio).
+- [x] `.env.example` is populated with all variables the app needs.
+- [x] Added a root `Dockerfile` for building the app image (previously missing).
+- [x] **Streaming completions now work for every provider.** `AiProvider.generateCompletionStream`
+  was only implemented by `OllamaProvider` — `OpenAiProvider` and `GeminiProvider` were missing
+  it entirely, which meant the project could not compile with those providers active. Both now
+  stream via SSE (OpenAI's `stream: true` chat completions, Gemini's `streamGenerateContent?alt=sse`),
+  matching the token-by-token behavior already used by `/chats/{chatId}/messages/stream`.
+
+Outstanding:
+
+- [ ] **Anthropic Claude is not yet a real provider.** `application-prod.yaml` has a `verbamind.ai.claude.api-key`
+  property and the README lists Claude as supported, but there is no `ClaudeProvider` class. Since Anthropic
+  has no public embeddings API, wiring it in cleanly requires deciding how embeddings are generated when
+  `AI_PROVIDER=claude` (e.g. pairing it with a separate embedding provider). Left out rather than guessed at.
+- [ ] No CI pipeline, TLS termination, or reverse proxy config is included — put this behind a reverse
+  proxy (nginx/Caddy/your cloud LB) with TLS in front of port 8080 before exposing it publicly.
+- [ ] The `.env` file bundled in this project contains real-looking local secrets. Rotate any credentials
+  in it before using it beyond local development, and never commit it (it is already gitignored).
 
 ## License
 
 Add your license here (e.g. MIT, Apache 2.0, or proprietary).
-````
