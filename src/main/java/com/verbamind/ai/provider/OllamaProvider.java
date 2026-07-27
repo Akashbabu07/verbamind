@@ -66,7 +66,7 @@ public class OllamaProvider implements AiProvider {
     @Timed(value = "ai.embedding.latency", extraTags = {"provider", "ollama"})
     public List<float[]> generateEmbeddings(List<String> texts) {
         List<float[]> results = new ArrayList<>();
-        for (String text : texts) results.add(generateEmbedding(text)); // Ollama has no native batch endpoint
+        for (String text : texts) results.add(generateEmbedding(text));
         return results;
     }
 

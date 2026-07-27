@@ -16,10 +16,6 @@ public interface UsageDailyRepository extends JpaRepository<UsageDaily, UUID> {
 
     Optional<UsageDaily> findByOrganizationIdAndUsageDate(UUID organizationId, LocalDate usageDate);
 
-    // Row-locks the org's usage row for the current day so that the quota check and the
-    // increment that follows it happen atomically w.r.t. other concurrent requests for the
-    // same org. Without this, two concurrent requests can both read "under quota" before
-    // either commits its increment, letting the daily/monthly AI limit be exceeded.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM UsageDaily u WHERE u.organizationId = :organizationId AND u.usageDate = :usageDate")
     Optional<UsageDaily> findByOrganizationIdAndUsageDateForUpdate(@Param("organizationId") UUID organizationId,

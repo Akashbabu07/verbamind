@@ -2,7 +2,6 @@ package com.verbamind.subscription.service;
 
 import com.verbamind.organization.entity.Organization;
 import com.verbamind.organization.entity.OrganizationRole;
-import com.verbamind.organization.exception.OrganizationNotFoundException;
 import com.verbamind.organization.repository.OrganizationRepository;
 import com.verbamind.document.service.OrganizationAccessGuard;
 import com.verbamind.subscription.dto.*;
@@ -40,7 +39,7 @@ public class SubscriptionService {
         this.accessGuard = accessGuard;
     }
     @Transactional
-    public Subscription createFreeSubscription(Organization organization) {
+    public void createFreeSubscription(Organization organization) {
         Plan freePlan = planRepository.findByCode(PlanCode.FREE)
                 .orElseThrow(() -> new PlanNotFoundException("FREE plan not seeded"));
 
@@ -51,7 +50,6 @@ public class SubscriptionService {
         subscription.setCurrentPeriodStart(Instant.now());
         subscription.setCurrentPeriodEnd(Instant.now().plus(30, ChronoUnit.DAYS));
         subscriptionRepository.save(subscription);
-        return subscription;
     }
 
     public List<PlanResponse> listPlans() {

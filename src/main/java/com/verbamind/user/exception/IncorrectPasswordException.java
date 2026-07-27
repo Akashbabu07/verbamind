@@ -4,6 +4,10 @@ import com.verbamind.exception.ApiException;
 import com.verbamind.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 
+
+/**
+ * this is custom error if user provide incorrect password this will be used
+ */
 public class IncorrectPasswordException extends ApiException {
     public IncorrectPasswordException(String message) {
         super(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, message);
