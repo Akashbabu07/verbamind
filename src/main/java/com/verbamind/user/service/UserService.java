@@ -46,8 +46,10 @@ public class UserService {
 
 
     /**
-     * this method help us to
-     * **/
+     * this method help us to update user profile and this method marked as transactional because it's working
+     * with database so it would be safe if this method perform operation either it completes or if some issue happen
+     *  it will roll back
+     **/
     @Transactional
     public UserProfileResponse updateUserProfile(UUID userId, UpdateProfileRequest request) {
         User user = getUserOrThrow(userId);
@@ -56,6 +58,11 @@ public class UserService {
         return toProfileResponse(user);
     }
 
+
+    /**
+     *  this marked as transactional either changed succeed or it will roll Back to original
+     *  this method change  password of existing user
+     * **/
     @Transactional
     public void changePassword(UUID userId, ChangePasswordRequest request) {
         User user = getUserOrThrow(userId);
@@ -68,6 +75,15 @@ public class UserService {
         refreshTokenRepository.deleteByUserId(user.getId());
     }
 
+
+    /**
+     * this method marked as Transaction either changed succeed or it will roll Back to original
+     * this method delete the user from our database
+     * it will match the password for confirmation is it matched user can be deleted .But we are not completely
+     * delete user from database we setDeleted as true so database should be consistent this is called as soft
+     * delete and set enabled as false this is restricted user to logged in again
+     *  and in last we are going to delete refresh token belong to this user
+     * **/
     @Transactional
     public void deleteUser(UUID userId, DeleteAccountRequest request) {
         User user = getUserOrThrow(userId);
@@ -81,21 +97,35 @@ public class UserService {
         refreshTokenRepository.deleteByUserId(user.getId());
     }
 
+    /**
+     * this method is responsible to get information about the user like his summary
+     * **/
     public SubscriptionResponse getSubscriptionSummary(UUID userId) {
         Organization personalWorkspace = organizationService.getPersonalWorkspace(userId);
         return subscriptionService.getSubscription(userId, personalWorkspace.getId());
     }
 
+
+    /**
+     * this method return the Summary of usage of application
+     * **/
     public UsageResponse getUsageSummary(UUID userId) {
         Organization personalWorkspace = organizationService.getPersonalWorkspace(userId);
         return usageService.getUsageSummary(userId, personalWorkspace.getId());
     }
 
+    /**
+     *this is helper method which mapped the user information
+     */
     private UserProfileResponse toProfileResponse(User user) {
         return new UserProfileResponse(user.getId(), user.getEmail(), user.getFullName(),
                 user.isEmailVerified(), user.getCreatedAt());
     }
 
+
+    /**
+     *this is helper function  it find the user from database through repository or return error if not found
+     */
     private User getUserOrThrow(UUID userId) {
         return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("user not found "));
     }

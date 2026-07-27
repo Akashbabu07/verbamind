@@ -11,6 +11,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+
+/**
+ *  this class is marked as  RestController means it contain method which followed mappings like POST GET
+ *   and request Mapping means uri start with this specific line  this class use the service folder method
+ */
+
+/**
+ * here AuthenticationPrincipal is responsible to provide current logged-in user  by using
+ *  CustomUserDetails we format how the user is acknowledged by spring security
+ **/
 @RestController
 @RequestMapping("/api/users/me")
 public class UserController {

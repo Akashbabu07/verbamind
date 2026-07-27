@@ -58,10 +58,6 @@ public class AuthService {
         user.setVerificationToken(UUID.randomUUID().toString());
 
         try {
-            // existsByEmail() above and this save() aren't atomic, so two concurrent
-            // registrations with the same email can both pass the check. The unique
-            // constraint on users.email is the real guard; translate its violation into
-            // the same clean 409 instead of letting it surface as a generic 500.
             userRepository.saveAndFlush(user);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(request.email());
@@ -78,9 +74,7 @@ public class AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         } catch (org.springframework.security.core.AuthenticationException e) {
-            // Covers bad credentials as well as DisabledException/LockedException thrown
-            // for disabled or deleted accounts. Deliberately don't distinguish the reason
-            // in the response, to avoid leaking account status to an unauthenticated caller.
+
             throw new InvalidCredentialsException();
         }
 
@@ -117,7 +111,7 @@ public class AuthService {
     public void forgotPassword(ForgotPasswordRequest request) {
         userRepository.findByEmail(request.email()).ifPresent(user -> {
             user.setResetToken(UUID.randomUUID().toString());
-            user.setResetTokenExpiresAt(Instant.now().plusSeconds(3600)); // 1 hour
+            user.setResetTokenExpiresAt(Instant.now().plusSeconds(3600));
             userRepository.save(user);
             emailService.sendPasswordResetEmail(user.getEmail(), user.getResetToken());
         });
@@ -137,7 +131,7 @@ public class AuthService {
         user.setResetTokenExpiresAt(null);
         userRepository.save(user);
 
-        refreshTokenRepository.deleteByUserId(user.getId()); // force re-login everywhere
+        refreshTokenRepository.deleteByUserId(user.getId());
     }
 
     @Transactional

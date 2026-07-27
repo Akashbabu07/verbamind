@@ -143,7 +143,7 @@ public class PaymentService {
 
         if (!"payment.captured".equals(event)) {
             log.info("Ignoring Razorpay webhook event: {}", event);
-            return; // only act on successful captures for V1
+            return;
         }
 
         JSONObject paymentEntity = payload.getJSONObject("payload").getJSONObject("payment").getJSONObject("entity");
@@ -157,7 +157,7 @@ public class PaymentService {
         }
 
         if (payment.getStatus() == PaymentStatus.PAID) {
-            return; // already processed via verifyPayment(); avoid double-activation
+            return;
         }
 
         markPaidAndActivate(payment, paymentId, null);

@@ -22,11 +22,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .map(CustomUserDetails::new)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
     }
-    public String loadUserByIdEmail(java.util.UUID id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + id))
-                .getEmail();
-    }
 
     public UserDetails loadUserById(java.util.UUID id) {
         return userRepository.findById(id)

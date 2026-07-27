@@ -21,7 +21,7 @@ public class AiProperties {
     public static class Ollama {
         private String baseUrl;
         private String embeddingModel = "nomic-embed-text";
-        private String chatModel = "llama3.2";
+        private String chatModel = "llama3.2:3b";
 
     }
 
