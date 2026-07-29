@@ -51,7 +51,6 @@ Note: Anthropic Claude is referenced in the original project README but there is
 
 The application is a Spring Boot web service exposing HTTP JSON endpoints (controllers). It uses relational persistence for metadata and pgvector for vector operations. Uploaded files are stored in MinIO and processed asynchronously. AI provider communication is encapsulated behind a provider interface with concrete adapters.
 
-Mermaid overview:
 
 <img width="3898" height="3757" alt="image" src="https://github.com/user-attachments/assets/fdb1035b-d35d-4d11-b330-d1911cee18ef" />
 
@@ -93,8 +92,6 @@ Components:
 
 Sequence diagram:
 
-<img width="8192" height="3540" alt="image" src="https://github.com/user-attachments/assets/9681a439-b306-43e8-85d1-5b9fcd9e4c78" />
-
 
 ---
 
@@ -107,7 +104,15 @@ Sequence diagram:
 
 ## Project tree (relevant portions)
 
+
 ```
+
+<img width="8192" height="3540" alt="image" src="https://github.com/user-attachments/assets/9681a439-b306-43e8-85d1-5b9fcd9e4c78" />
+
+```
+## Project Structure
+
+```text
 .
 ├── Dockerfile
 ├── docker/
@@ -122,12 +127,12 @@ Sequence diagram:
 │   │   │   │   ├── config/
 │   │   │   │   ├── controller/
 │   │   │   │   ├── dto/
-│   │   │   │   ├── entity/                (DocumentChunk entity uses pgvector)
-│   │   │   │   ├── provider/              (AiProvider, OllamaProvider, OpenAiProvider, GeminiProvider)
-│   │   │   │   ├── repository/            (chunk repository)
-│   │   │   │   └── service/               (DocumentIngestionService, RagQueryService, ChunkingService, TextExtractionService)
+│   │   │   │   ├── entity/
+│   │   │   │   ├── provider/
+│   │   │   │   ├── repository/
+│   │   │   │   └── service/
 │   │   │   ├── auth/
-│   │   │   ├── document/                  (DocumentService, MinioStorageService, FileHashService, versioning)
+│   │   │   ├── document/
 │   │   │   ├── chat/
 │   │   │   ├── organization/
 │   │   │   ├── payment/
@@ -139,10 +144,9 @@ Sequence diagram:
 │   │       ├── application.yaml
 │   │       ├── application-dev.yaml
 │   │       ├── application-prod.yaml
-│   │       └── db/migration/   (Flyway migrations V1..V14)
+│   │       └── db/migration/
 └── README.md
 ```
-
 ---
 
 ## How to run (developer / evaluator)
