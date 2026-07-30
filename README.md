@@ -362,20 +362,6 @@ curl -N -H "Authorization: Bearer <ACCESS_TOKEN>" \
 - DB migrations: `src/main/resources/db/migration/` (look at `V5__ai.sql` for AI tables)
 - Tests: `src/test/java/...` includes unit tests for RAG behavior (e.g., `RagQueryServiceTest`)
 
----
-
-## Future improvements (recommended for a portfolio)
-
-These are realistic enhancements that align with the current design and would be good additions to highlight work in a portfolio:
-
-- Use provider batch embedding APIs (where available) to improve ingestion throughput.
-- Add end‑to‑end integration tests (Testcontainers for Postgres, MinIO, and optionally Ollama) and CI pipeline.
-- More robust quota and rate-limiting (per-user and per-organization) with clearer enforcement and reporting.
-- Extend retrieval strategies: experiment with length‑aware chunking, rerankers, or hybrid weighting improvements.
-- Add configurable prompt templating per-organization and prompt versioning to track prompt engineering changes.
-- Add example datasets and demo scripts for quick portfolio demonstrations.
-
----
 
 
 ---
