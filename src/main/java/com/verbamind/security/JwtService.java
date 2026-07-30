@@ -1,6 +1,8 @@
 package com.verbamind.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
@@ -23,6 +25,11 @@ public class JwtService {
     @Autowired
     public JwtService(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
+        if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isBlank()) {
+            throw new IllegalStateException(
+                    "verbamind.jwt.secret is not set — check that JWT_SECRET is present in your .env "
+                            + "and actually loaded (e.g. via docker-compose env_file, or exported in your shell).");
+        }
         this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
@@ -56,14 +63,17 @@ public class JwtService {
         try {
             parseClaims(token);
             return true;
-        } catch (Exception e) {
-            log.debug("Invalid/expired JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.debug("Rejected access token: expired at {}", e.getClaims().getExpiration());
+            return false;
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Rejected access token: {}", e.getMessage());
             return false;
         }
     }
 
     private Claims parseClaims(String token) {
-        // Use the modern parser API to validate signature and parse the JWS claims
+        
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()

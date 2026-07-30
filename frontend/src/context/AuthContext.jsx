@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as authApi from "../api/auth";
-import { getAccessToken, clearTokens } from "../api/client";
+import { getAccessToken, clearTokens, onSessionExpired } from "../api/client";
 import { getProfile } from "../api/resources";
 
 const AuthContext = createContext(null);
@@ -8,6 +9,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const hydrate = async () => {
@@ -27,6 +29,16 @@ export function AuthProvider({ children }) {
     hydrate();
   }, []);
 
+
+  useEffect(() => {
+    return onSessionExpired(() => {
+      setUser(null);
+      setLoading(false);
+      navigate("/login", { replace: true });
+    });
+
+  }, []);
+
   const login = async (email, password) => {
     const data = await authApi.login({ email, password });
     setUser(data.user);
@@ -40,8 +52,13 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    await authApi.logout(sessionStorage.getItem("vm_rt"));
-    setUser(null);
+    try {
+      await authApi.logout(sessionStorage.getItem("vm_rt"));
+    } catch {
+    } finally {
+      setUser(null);
+      localStorage.removeItem("vm_org");
+    }
   };
 
   const refreshUser = async () => {
