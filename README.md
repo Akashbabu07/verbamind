@@ -105,7 +105,7 @@ The API is served at `http://localhost:8080` with the `dev` Spring profile activ
 
 ```bash
 docker exec -it documind-ollama ollama pull nomic-embed-text
-docker exec -it documind-ollama ollama pull llama3.2
+docker exec -it documind-ollama ollama pull llama3.2:3b
 ```
 
 ## Environment Variables
