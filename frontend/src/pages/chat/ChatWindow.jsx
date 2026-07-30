@@ -4,21 +4,18 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useOrg } from "../../context/OrgContext";
 import { getChat } from "../../api/resources";
-import { getAccessToken } from "../../api/client";
-
+import { useToast, getErrorMessage } from "../../context/ToastContext";
+import { getAccessToken, refreshAccessToken, handleSessionExpired } from "../../api/client";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
 function parseSseChunk(raw) {
-  // Parses one SSE "event" block (lines joined by \n, terminated by a blank line).
-  // Format from the backend: "event: token\ndata: hello" or "event: done\ndata: "
   let event = "message";
   const dataLines = [];
   for (const line of raw.split("\n")) {
     if (line.startsWith("event:")) {
       event = line.slice(6).trim();
     } else if (line.startsWith("data:")) {
-      // Only strip a single leading space after "data:", per the SSE spec —
-      // never trim the rest, or you eat the spaces between streamed words.
+
       dataLines.push(line.slice(5).replace(/^ /, ""));
     }
   }
@@ -28,6 +25,7 @@ function parseSseChunk(raw) {
 export default function ChatWindow() {
   const { chatId } = useParams();
   const { activeOrgId } = useOrg();
+  const toast = useToast();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -40,7 +38,9 @@ export default function ChatWindow() {
     setLoadingChat(true);
     getChat(activeOrgId, chatId)
       .then((chat) => setMessages(chat.messages || []))
+      .catch((err) => toast.error(getErrorMessage(err, "Couldn't load this chat.")))
       .finally(() => setLoadingChat(false));
+
   }, [activeOrgId, chatId]);
 
   useEffect(() => {
@@ -65,18 +65,28 @@ export default function ChatWindow() {
     setStreaming(true);
 
     try {
-      const response = await fetch(
-        `${API_BASE}/organizations/${activeOrgId}/chats/${chatId}/messages/stream`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-            Authorization: `Bearer ${getAccessToken()}`,
-          },
-          body: JSON.stringify({ content }),
+      const openStream = (token) =>
+          fetch(`${API_BASE}/organizations/${activeOrgId}/chats/${chatId}/messages/stream`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "text/event-stream",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ content }),
+          });
+
+      let response = await openStream(getAccessToken());
+
+      if (response.status === 401 || response.status === 403) {
+        try {
+          const newToken = await refreshAccessToken();
+          response = await openStream(newToken);
+        } catch {
+          handleSessionExpired();
+          throw new Error("session expired");
         }
-      );
+      }
 
       if (!response.ok || !response.body) {
         throw new Error("stream failed");
@@ -92,7 +102,6 @@ export default function ChatWindow() {
 
         buffer += decoder.decode(value, { stream: true });
 
-        // SSE events are separated by a blank line (\n\n).
         const events = buffer.split("\n\n");
         buffer = events.pop(); // last chunk may be incomplete, keep it for next read
 

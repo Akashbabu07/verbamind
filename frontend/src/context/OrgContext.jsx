@@ -20,14 +20,17 @@ export function OrgProvider({ children }) {
     try {
       const orgs = await listOrganizations();
       setOrganizations(orgs);
-      if (!activeOrgId && orgs.length > 0) {
-        selectOrg(orgs[0].id);
+
+      const stillValid = orgs.some((o) => o.id === activeOrgId);
+      if (!stillValid) {
+        selectOrg(orgs.length > 0 ? orgs[0].id : null);
       }
+    } catch {
+      setOrganizations([]);
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, activeOrgId]);
 
   useEffect(() => {
     refresh();

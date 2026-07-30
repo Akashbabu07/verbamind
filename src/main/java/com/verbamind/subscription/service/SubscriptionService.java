@@ -59,6 +59,7 @@ public class SubscriptionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public SubscriptionResponse getSubscription(UUID currentUserId, UUID organizationId) {
         accessGuard.requireMembership(organizationId, currentUserId);
         Subscription sub = getSubscriptionOrThrow(organizationId);
