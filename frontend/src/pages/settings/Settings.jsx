@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { updateProfile, changePassword, deleteAccount } from "../../api/resources";
+import { useToast, getErrorMessage } from "../../context/ToastContext";
 
 export default function Settings() {
   const { user, refreshUser, logout } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState(user?.fullName || "");
@@ -19,9 +21,13 @@ export default function Settings() {
   const onSaveProfile = async (e) => {
     e.preventDefault();
     setProfileMsg("");
-    await updateProfile({ fullName });
-    await refreshUser();
-    setProfileMsg("Profile updated.");
+    try {
+      await updateProfile({ fullName });
+      await refreshUser();
+      setProfileMsg("Profile updated.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't update your profile."));
+    }
   };
 
   const onChangePassword = async (e) => {

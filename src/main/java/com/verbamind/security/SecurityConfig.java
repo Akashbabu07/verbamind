@@ -52,22 +52,6 @@ public class SecurityConfig {
         http.cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((req, res, e) -> {
-                            if (!res.isCommitted()) {
-                                res.setContentType("application/json");
-                                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                res.getWriter().write("{\"error\":\"Unauthorized\"}");
-                            }
-                        })
-                        .accessDeniedHandler((req, res, e) -> {
-                            if (!res.isCommitted()) {
-                                res.setContentType("application/json");
-                                res.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                                res.getWriter().write("{\"error\":\"Access Denied\"}");
-                            }
-                        })
-                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/webhooks/**").permitAll()
@@ -79,12 +63,5 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public InitializingBean initSecurityContextHolderStrategy() {
-        return () -> SecurityContextHolder.setStrategyName(
-                SecurityContextHolder.MODE_INHERITABLETHREADLOCAL
-        );
     }
 }

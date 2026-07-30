@@ -17,8 +17,11 @@ export default function AppShell() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
+    try {
+      await logout();
+    } finally {
+      navigate("/login");
+    }
   };
 
   return (

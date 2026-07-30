@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrg } from "../../context/OrgContext";
 import { listChats, createChat, deleteChat } from "../../api/resources";
+import { useToast, getErrorMessage } from "../../context/ToastContext";
 
 export default function ChatList() {
   const { activeOrgId } = useOrg();
+  const toast = useToast();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -14,18 +16,28 @@ export default function ChatList() {
     setLoading(true);
     listChats(activeOrgId)
       .then((data) => setChats(data.items || data))
+      .catch((err) => toast.error(getErrorMessage(err, "Couldn't load chats.")))
       .finally(() => setLoading(false));
+
   }, [activeOrgId]);
 
   const onNewChat = async () => {
-    const chat = await createChat(activeOrgId, { title: "New chat" });
-    navigate(`/app/chats/${chat.id}`);
+    try {
+      const chat = await createChat(activeOrgId, { title: "New chat" });
+      navigate(`/app/chats/${chat.id}`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't start a new chat."));
+    }
   };
 
   const onDelete = async (chatId) => {
     if (!confirm("Delete this chat?")) return;
-    await deleteChat(activeOrgId, chatId);
-    setChats((cs) => cs.filter((c) => c.id !== chatId));
+    try {
+      await deleteChat(activeOrgId, chatId);
+      setChats((cs) => cs.filter((c) => c.id !== chatId));
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't delete that chat."));
+    }
   };
 
   if (!activeOrgId) return <div className="empty-state">Select an organization first.</div>;

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { OrgProvider } from "./context/OrgContext";
+import { ToastProvider } from "./context/ToastContext";
 import RequireAuth from "./components/RequireAuth";
 import AppShell from "./components/AppShell";
 
@@ -22,6 +23,7 @@ import Settings from "./pages/settings/Settings";
 export default function App() {
   return (
     <BrowserRouter>
+      <ToastProvider>
       <AuthProvider>
         <OrgProvider>
           <Routes>
@@ -54,6 +56,7 @@ export default function App() {
           </Routes>
         </OrgProvider>
       </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

@@ -7,9 +7,11 @@ import {
   deleteDocument,
   searchDocuments,
 } from "../../api/resources";
+import { useToast, getErrorMessage } from "../../context/ToastContext";
 
 export default function Documents() {
   const { activeOrgId } = useOrg();
+  const toast = useToast();
   const [documents, setDocuments] = useState([]);
   const [query, setQuery] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -23,9 +25,12 @@ export default function Documents() {
     try {
       const data = await listDocuments(activeOrgId);
       setDocuments(data.items || data);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't load documents."));
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeOrgId]);
 
   useEffect(() => {
@@ -35,8 +40,12 @@ export default function Documents() {
   const onSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return load();
-    const results = await searchDocuments(activeOrgId, query.trim());
-    setDocuments(results.items || results);
+    try {
+      const results = await searchDocuments(activeOrgId, query.trim());
+      setDocuments(results.items || results);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Search failed."));
+    }
   };
 
   const onUpload = async (e) => {
@@ -47,6 +56,8 @@ export default function Documents() {
     try {
       await uploadDocument(activeOrgId, file, setProgress);
       await load();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't upload that file."));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -55,20 +66,28 @@ export default function Documents() {
 
   const onDelete = async (docId) => {
     if (!confirm("Delete this document?")) return;
-    await deleteDocument(activeOrgId, docId);
-    setDocuments((docs) => docs.filter((d) => d.id !== docId));
+    try {
+      await deleteDocument(activeOrgId, docId);
+      setDocuments((docs) => docs.filter((d) => d.id !== docId));
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't delete that document."));
+    }
   };
 
   const onDownload = async (doc) => {
-    const res = await api.get(`/organizations/${activeOrgId}/documents/${doc.id}/download`, {
-      responseType: "blob",
-    });
-    const url = URL.createObjectURL(res.data);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = doc.fileName || doc.name || "document";
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const res = await api.get(`/organizations/${activeOrgId}/documents/${doc.id}/download`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.fileName || doc.name || "document";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Couldn't download that document."));
+    }
   };
 
   if (!activeOrgId) return <div className="empty-state">Select an organization first.</div>;

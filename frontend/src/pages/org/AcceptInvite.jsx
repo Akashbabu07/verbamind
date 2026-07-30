@@ -19,7 +19,7 @@ export default function AcceptInvite() {
         setStatus("done");
       })
       .catch(() => setStatus("failed"));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [loading, user, token]);
 
   if (!token) {
