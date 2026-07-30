@@ -3,8 +3,9 @@ package com.verbamind.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -12,8 +13,9 @@ import java.util.Date;
 import java.util.UUID;
 
 @Service
-@EnableConfigurationProperties(JwtProperties.class)
 public class JwtService {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
     private final JwtProperties jwtProperties;
     private final SecretKey key;
@@ -29,10 +31,10 @@ public class JwtService {
         Date expiry = new Date(now.getTime() + jwtProperties.getAccessTokenExpirationMs());
 
         return Jwts.builder()
-                .subject(userId.toString())
+                .setSubject(userId.toString())
                 .claim("email", email)
-                .issuedAt(now)
-                .expiration(expiry)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
                 .signWith(key)
                 .compact();
     }
@@ -55,15 +57,17 @@ public class JwtService {
             parseClaims(token);
             return true;
         } catch (Exception e) {
+            log.debug("Invalid/expired JWT token: {}", e.getMessage());
             return false;
         }
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(key)
+        // Use the modern parser API to validate signature and parse the JWS claims
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
                 .build()
-                .parseSignedClaims(token)
-                .getPayload();
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
