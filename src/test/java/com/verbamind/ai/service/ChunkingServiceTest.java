@@ -39,8 +39,7 @@ class ChunkingServiceTest {
         for (int i = 0; i < chunks.size() - 1; i++) {
             assertThat(chunks.get(i)).hasSize(1000);
         }
-        // Consecutive chunks should overlap: the tail of one should reappear at the head of the next
-        String tailOfFirst = chunks.get(0).substring(chunks.get(0).length() - 150);
+         String tailOfFirst = chunks.get(0).substring(chunks.get(0).length() - 150);
         String headOfSecond = chunks.get(1).substring(0, 150);
         assertThat(headOfSecond).isEqualTo(tailOfFirst);
     }

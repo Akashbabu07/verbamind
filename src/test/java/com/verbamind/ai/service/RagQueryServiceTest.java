@@ -30,10 +30,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Unit tests for the core RAG answer flow. All external dependencies (AI provider,
- * search, repositories) are mocked, so this runs fast with no DB/HTTP required.
- */
 @ExtendWith(MockitoExtension.class)
 class RagQueryServiceTest {
 
