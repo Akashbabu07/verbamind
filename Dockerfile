@@ -1,5 +1,5 @@
 # ---- Build stage ----
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /app
 
 # Cache dependencies separately from source for faster rebuilds
@@ -11,7 +11,7 @@ COPY src src
 RUN ./mvnw -B clean package -DskipTests
 
 # ---- Runtime stage ----
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 WORKDIR /app
 
 RUN addgroup -S verbamind && adduser -S verbamind -G verbamind
