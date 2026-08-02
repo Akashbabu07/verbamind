@@ -44,8 +44,6 @@ This README documents only features implemented in the repository and explains a
 - Subscription + payments integration with Razorpay (order creation and webhook verification).
 - Flyway migrations for schema (auth, organization, document, AI/chunk, chat, subscription, payments, usage).
 
-Note: Anthropic Claude is mentioned in some docs but there is no implemented provider for it in the codebase.
-
 ---
 
 ## Architecture (concise)
@@ -90,7 +88,7 @@ Key architectural choices:
      - `AiProvider.generateEmbedding(question)` to get question embedding.
      - `HybridSearchService.search` performs hybrid retrieval: pgvector similarity (via `DocumentChunkRepository.findSimilarChunks`) and full-text search; results are fused by Reciprocal Rank Fusion (RRF).
      - If no relevant chunks are found an informative fallback is returned.
-     - Otherwise selected chunks are assembled into a context block and a system prompt is prepared.
+     - Otherwise, selected chunks are assembled into a context block and a system prompt is prepared.
      - `AiProvider.generateCompletion` or `generateCompletionStream` is invoked for a synchronous or streaming response respectively.
      - Tokens used are approximated and recorded with `UsageService.addTokensUsed`.
      - The returned answer is accompanied by numbered citations (mapping to chunk/document ids), persisted in chat/message entities.
