@@ -44,8 +44,6 @@ This README documents only features implemented in the repository and explains a
 - Subscription + payments integration with Razorpay (order creation and webhook verification).
 - Flyway migrations for schema (auth, organization, document, AI/chunk, chat, subscription, payments, usage).
 
-Note: Anthropic Claude is mentioned in some docs but there is no implemented provider for it in the codebase.
-
 ---
 
 ## Architecture (concise)
