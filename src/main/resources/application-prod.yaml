@@ -7,6 +7,9 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL:false}
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -39,7 +42,7 @@ verbamind:
     secret-key: ${MINIO_SECRET_KEY}
     bucket: verbamind-prod
   ai:
-    provider: ${AI_PROVIDER:groq}
+    provider: ${AI_PROVIDER:gemini}
     openai:
       api-key: ${OPENAI_API_KEY}
     gemini:

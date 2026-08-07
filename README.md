@@ -17,6 +17,7 @@ This README documents only features implemented in the repository and explains a
 - Auth: JWT (access + refresh)
 - Payments: Razorpay (order creation + webhook verification)
 - Entry point: `src/main/java/com/verbamind/VerbamindApplication.java`
+- Documentation : swagger-doc documented backedn with openai 
 
 ---
 
@@ -191,7 +192,7 @@ Hybrid retrieval:
 │   │   │   │   ├── controller/
 │   │   │   │   ├── dto/
 │   │   │   │   ├── entity/
-│   │   │   │   ├── provider/        # AiProvider + OpenAi/Ollama/Gemini
+│   │   │   │   ├── provider/        # AiProvider + OpenAi/Ollama/Gemini/groq
 │   │   │   │   ├── repository/
 │   │   │   │   └── service/         # RagQueryService, HybridSearchService, ingestion services
 │   │   │   ├── auth/                # JWT auth, registration, email integration
