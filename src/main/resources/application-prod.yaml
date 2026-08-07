@@ -40,7 +40,8 @@ verbamind:
     endpoint: ${MINIO_ENDPOINT}
     access-key: ${MINIO_ACCESS_KEY}
     secret-key: ${MINIO_SECRET_KEY}
-    bucket: verbamind-prod
+    region: ${MINIO_REGION}
+    bucket: ${MINIO_BUCKET:verbamind-prod}
   ai:
     provider: ${AI_PROVIDER:gemini}
     openai:
