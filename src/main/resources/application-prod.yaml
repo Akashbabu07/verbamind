@@ -39,11 +39,15 @@ verbamind:
     secret-key: ${MINIO_SECRET_KEY}
     bucket: verbamind-prod
   ai:
-    provider: ${AI_PROVIDER:openai}
+    provider: ${AI_PROVIDER:groq}
     openai:
       api-key: ${OPENAI_API_KEY}
     gemini:
       api-key: ${GEMINI_API_KEY}
+    groq:
+      api-key: ${GROQ_API_KEY}
+      embedding-model: ${GROQ_EMBEDDING_MODEL:nomic-embed-text-v1_5}
+      chat-model: ${GROQ_CHAT_MODEL:llama-3.3-70b-versatile}
 
   razorpay:
     key-id: ${RAZORPAY_KEY_ID}

@@ -17,40 +17,46 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@ConditionalOnProperty(prefix = "verbamind.ai", name = "provider", havingValue = "openai")
-public class OpenAiProvider implements AiProvider {
+@ConditionalOnProperty(prefix = "verbamind.ai", name = "provider", havingValue = "groq")
+public class GroqProvider implements AiProvider {
+
+    private static final String BASE_URL = "https://api.groq.com/openai/v1";
 
     private final AiProperties properties;
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public OpenAiProvider(AiProperties properties) {
+    public GroqProvider(AiProperties properties) {
         this.properties = properties;
     }
 
     @Override
-    @Timed(value = "ai.embedding.latency", extraTags = {"provider", "openai"})
+    @Timed(value = "ai.embedding.latency", extraTags = {"provider", "groq"})
     public float[] generateEmbedding(String text) {
         return generateEmbeddings(List.of(text)).get(0);
     }
 
     @Override
-    @Timed(value = "ai.embedding.latency", extraTags = {"provider", "openai"})
+    @Timed(value = "ai.embedding.latency", extraTags = {"provider", "groq"})
     public List<float[]> generateEmbeddings(List<String> texts) {
         try {
             String body = mapper.writeValueAsString(java.util.Map.of(
-                    "model", properties.getOpenai().getEmbeddingModel(),
-                    "input", texts,
-                    "dimensions", 768
+                    "model", properties.getGroq().getEmbeddingModel(),
+                    "input", texts
             ));
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/embeddings"))
+                    .uri(URI.create(BASE_URL + "/embeddings"))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + properties.getOpenai().getApiKey())
+                    .header("Authorization", "Bearer " + properties.getGroq().getApiKey())
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
             HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
             JsonNode json = mapper.readTree(res.body());
+
+            if (json.has("error")) {
+                throw new AiProviderException("Groq embedding request failed: " + json.get("error").get("message").asText());
+            }
+
             List<float[]> vectors = new ArrayList<>();
             for (JsonNode item : json.get("data")) {
                 JsonNode arr = item.get("embedding");
@@ -59,57 +65,59 @@ public class OpenAiProvider implements AiProvider {
                 vectors.add(v);
             }
             return vectors;
+        } catch (AiProviderException e) {
+            throw e;
         } catch (Exception e) {
-            throw new AiProviderException("OpenAI embedding request failed: " + e.getMessage());
+            throw new AiProviderException("Groq embedding request failed: " + e.getMessage());
         }
     }
 
     @Override
-    @Timed(value = "ai.completion.latency", extraTags = {"provider", "openai", "streaming", "false"})
+    @Timed(value = "ai.completion.latency", extraTags = {"provider", "groq", "streaming", "false"})
     public String generateCompletion(String systemPrompt, String userPrompt) {
         try {
             String body = mapper.writeValueAsString(java.util.Map.of(
-                    "model", properties.getOpenai().getChatModel(),
+                    "model", properties.getGroq().getChatModel(),
                     "messages", List.of(
                             java.util.Map.of("role", "system", "content", systemPrompt),
                             java.util.Map.of("role", "user", "content", userPrompt)
                     )
             ));
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/chat/completions"))
+                    .uri(URI.create(BASE_URL + "/chat/completions"))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + properties.getOpenai().getApiKey())
+                    .header("Authorization", "Bearer " + properties.getGroq().getApiKey())
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
             HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
             JsonNode json = mapper.readTree(res.body());
 
             if (json.has("error")) {
-                throw new AiProviderException("OpenAI completion request failed: " + json.get("error").get("message").asText());
+                throw new AiProviderException("Groq completion request failed: " + json.get("error").get("message").asText());
             }
 
             JsonNode choices = json.get("choices");
             if (choices == null || !choices.isArray() || choices.isEmpty()) {
                 throw new AiProviderException(
-                        "OpenAI completion request failed: unexpected response (HTTP " + res.statusCode() + "): " + res.body());
+                        "Groq completion request failed: unexpected response (HTTP " + res.statusCode() + "): " + res.body());
             }
 
             return choices.get(0).get("message").get("content").asText();
         } catch (AiProviderException e) {
             throw e;
         } catch (Exception e) {
-            throw new AiProviderException("OpenAI completion request failed: " + e.getMessage());
+            throw new AiProviderException("Groq completion request failed: " + e.getMessage());
         }
     }
 
     @Override
-    @Timed(value = "ai.completion.latency", extraTags = {"provider", "openai", "streaming", "true"})
+    @Timed(value = "ai.completion.latency", extraTags = {"provider", "groq", "streaming", "true"})
     public void generateCompletionStream(String systemPrompt, String userPrompt,
                                          java.util.function.Consumer<String> onToken,
                                          Runnable onComplete) {
         try {
             String body = mapper.writeValueAsString(java.util.Map.of(
-                    "model", properties.getOpenai().getChatModel(),
+                    "model", properties.getGroq().getChatModel(),
                     "stream", true,
                     "messages", List.of(
                             java.util.Map.of("role", "system", "content", systemPrompt),
@@ -117,9 +125,9 @@ public class OpenAiProvider implements AiProvider {
                     )
             ));
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/chat/completions"))
+                    .uri(URI.create(BASE_URL + "/chat/completions"))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + properties.getOpenai().getApiKey())
+                    .header("Authorization", "Bearer " + properties.getGroq().getApiKey())
                     .POST(HttpRequest.BodyPublishers.ofString(body))
                     .build();
 
@@ -128,7 +136,7 @@ public class OpenAiProvider implements AiProvider {
             if (res.statusCode() >= 400) {
                 String errorBody = new String(res.body().readAllBytes());
                 throw new AiProviderException(
-                        "OpenAI completion request failed (HTTP " + res.statusCode() + "): " + errorBody);
+                        "Groq completion request failed (HTTP " + res.statusCode() + "): " + errorBody);
             }
 
             try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(res.body()))) {
@@ -138,14 +146,12 @@ public class OpenAiProvider implements AiProvider {
                     if (!line.startsWith("data:")) continue;
 
                     String data = line.substring(5).trim();
-                    if (data.equals("[DONE]")) {
-                        break;
-                    }
+                    if (data.equals("[DONE]")) break;
 
                     JsonNode json = mapper.readTree(data);
 
                     if (json.has("error")) {
-                        throw new AiProviderException("OpenAI completion request failed: " + json.get("error").get("message").asText());
+                        throw new AiProviderException("Groq completion request failed: " + json.get("error").get("message").asText());
                     }
 
                     JsonNode choices = json.get("choices");
@@ -164,7 +170,7 @@ public class OpenAiProvider implements AiProvider {
         } catch (AiProviderException e) {
             throw e;
         } catch (Exception e) {
-            throw new AiProviderException("OpenAI completion request failed: " + e.getMessage());
+            throw new AiProviderException("Groq completion request failed: " + e.getMessage());
         }
     }
 }

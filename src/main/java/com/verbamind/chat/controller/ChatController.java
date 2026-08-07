@@ -84,6 +84,40 @@ public class ChatController {
         return ResponseEntity.ok(ApiResponse.success(null, "Chat deleted"));
     }
 
+//    @PostMapping(value = "/{chatId}/messages/stream", produces = "text/event-stream")
+//    public SseEmitter sendMessageStream(
+//            @AuthenticationPrincipal CustomUserDetails currentUser,
+//            @PathVariable UUID organizationId,
+//            @PathVariable UUID chatId,
+//            @Valid @RequestBody SendMessageRequest request) {
+//
+//        SseEmitter emitter = new SseEmitter(60_000L);
+//        chatStreamExecutor.submit(() -> {
+//            try {
+//                chatService.streamMessage(currentUser.getId(), organizationId, chatId, request,
+//                        token -> {
+//                            try {
+//                                emitter.send(SseEmitter.event().name("token").data(token));
+//                            } catch (Exception e) {
+//                                emitter.completeWithError(e);
+//                            }
+//                        },
+//                        () -> {
+//                            try {
+//                                emitter.send(SseEmitter.event().name("done").data(""));
+//                                emitter.complete();
+//                            } catch (Exception e) {
+//                                emitter.completeWithError(e);
+//                            }
+//                        });
+//            } catch (Exception e) {
+//                emitter.completeWithError(e);
+//            }
+//        });
+//
+//        return emitter;
+//    }
+
     @PostMapping(value = "/{chatId}/messages/stream", produces = "text/event-stream")
     public SseEmitter sendMessageStream(
             @AuthenticationPrincipal CustomUserDetails currentUser,
@@ -92,6 +126,12 @@ public class ChatController {
             @Valid @RequestBody SendMessageRequest request) {
 
         SseEmitter emitter = new SseEmitter(60_000L);
+
+        if (currentUser == null) {
+            emitter.completeWithError(new org.springframework.security.access.AccessDeniedException("Unauthenticated"));
+            return emitter;
+        }
+
         chatStreamExecutor.submit(() -> {
             try {
                 chatService.streamMessage(currentUser.getId(), organizationId, chatId, request,

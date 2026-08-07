@@ -45,6 +45,36 @@ This README documents only features implemented in the repository and explains a
 - Flyway migrations for schema (auth, organization, document, AI/chunk, chat, subscription, payments, usage).
 
 ---
+# My Project
+
+A brief description of the project.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td>
+      <img src="img/img.png" alt="Screenshot 1" width="400">
+    </td>
+    <td>
+      <img src="img/img_1.png" alt="Screenshot 2" width="400">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="img/img_2.png" alt="Screenshot 3" width="400">
+    </td>
+    <td>
+      <img src="img/img_3.png" alt="Screenshot 4" width="400">
+    </td>
+  </tr>
+</table>
+
+## Another Screenshot
+
+<p align="center">
+  <img src="img/img_4.png" alt="Screenshot 5" width="500">
+</p>
 
 ## Architecture (concise)
 

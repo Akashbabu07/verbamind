@@ -34,6 +34,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
+
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false; // re-run this filter on async dispatch too, so SecurityContext survives SSE completion
+    }
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
